@@ -21,7 +21,6 @@ interface Props {
   isRemovingDevice?: boolean;
   isSigningOutDevice?: boolean;
   onRemove: (value: IDevice) => void;
-  onSignOut: (value: IDevice) => void;
 }
 
 const PlatformIcon = ({ platform }: { platform: string }) => {
@@ -45,11 +44,11 @@ export const DeviceCard: React.FC<Props> = (props) => {
 
   const device = props.device;
   const isCurrent = device.deviceId === deviceId;
-  const lastSeenText = formatDistanceToNow(device.metadata.lastSeen ? new Date(device.metadata.lastSeen) : new Date(), {
+  const lastSeenText = formatDistanceToNow(device.lastSeen ? new Date(device.lastSeen) : new Date(), {
     addSuffix: true,
   });
 
-  const [notification, setNotification] = useState(device.notifications.enabled);
+  const [notification, setNotification] = useState(device.notifications.accounts);
 
   return (
     <Surface
@@ -107,21 +106,6 @@ export const DeviceCard: React.FC<Props> = (props) => {
         <Switch size="sm" isSelected={notification} onChange={setNotification} />
       </div>
       <div className="flex justify-end gap-2">
-        {device.metadata.isLoggedIn && (
-          <Button
-            isIconOnly
-            size="sm"
-            variant="secondary"
-            fullWidth
-            isDisabled={isCurrent}
-            isPending={props.isSigningOutDevice}
-            onPress={() => props.onSignOut(device)}
-          >
-            {({ isPending }) =>
-              isPending ? <Spinner size="sm" color="warning" /> : <LuLogOut className="text-red-600" />
-            }
-          </Button>
-        )}
         <Button
           isIconOnly
           size="sm"

@@ -15,41 +15,8 @@ export default function DevicesPage() {
   const { isProgress, setIsProgress } = useGlobalState();
 
   const [devices, setDevices] = useState<IDevice[]>([]);
+  const [signingOutDeviceId] = useState<string | undefined>(undefined);
   const [removingDeviceId, setRemovingDeviceId] = useState<string | undefined>(undefined);
-  const [signingOutDeviceId, setSigningOutDeviceId] = useState<string | undefined>(undefined);
-
-  const handleSignOutDevice = async (device: IDevice) => {
-    const { model, _id } = device;
-    showModal({
-      title: "Log Out Device",
-      description: `Device '${model}' will be signed out immediately and lose all access to your account.`,
-      status: "warning",
-      onConfirm: async () => {
-        setSigningOutDeviceId(_id);
-        try {
-          const response = await interceptor.delete(`/user/devices/${_id}`);
-          setDevices((prev) =>
-            prev.map((item) =>
-              item._id === _id
-                ? {
-                    ...item,
-                    metadata: {
-                      ...item.metadata,
-                      isLoggedIn: response.data.device.metadata.isLoggedIn,
-                    },
-                  }
-                : item,
-            ),
-          );
-          toast.success(response.data.message);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message || error.message);
-        } finally {
-          setSigningOutDeviceId(undefined);
-        }
-      },
-    });
-  };
 
   const handleRemoveDevice = async (device: IDevice) => {
     const { model, _id } = device;
@@ -103,7 +70,6 @@ export default function DevicesPage() {
               key={device._id}
               device={device}
               onRemove={handleRemoveDevice}
-              onSignOut={handleSignOutDevice}
               isRemovingDevice={removingDeviceId === device._id}
               isSigningOutDevice={signingOutDeviceId === device._id}
             />

@@ -8,12 +8,12 @@ let isRefreshingToken: Promise<any> | null = null;
 
 export const useAxios = () => {
   const deviceInfo = useDeviceInfoState();
-  const { model, platform, deviceId, operatingSystem } = deviceInfo;
+  const { model, platform, deviceId, clientId, operatingSystem } = deviceInfo;
 
   const [axiosInstances, _] = useState(() => {
     const options: CreateAxiosDefaults = {
       baseURL: process.env.NEXT_PUBLIC_API_URL,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Client-Id": clientId },
     };
     return {
       axios: axiosInstance.create(options),
@@ -25,8 +25,9 @@ export const useAxios = () => {
   useEffect(() => {
     const headers: Record<string, string | undefined> = {
       "Content-Type": "application/json",
-      ...(platform && { "X-Platform": platform }),
+      "X-Client-Id": clientId,
       ...(model && { "X-Model": model }),
+      ...(platform && { "X-Platform": platform }),
       ...(deviceId && { "X-Device-Id": deviceId }),
       ...(operatingSystem && { "X-Operating-System": operatingSystem }),
     };

@@ -12,6 +12,7 @@ export const useDeviceInfoState = create<IDeviceInfo & DeviceInfoStateActions>()
     platform: undefined,
     deviceId: undefined,
     operatingSystem: undefined,
+    clientId: "accounts",
     getDeviceInfo: async () => {
       const deviceInfo = await Device.getInfo();
       const { identifier: deviceId } = await Device.getId();

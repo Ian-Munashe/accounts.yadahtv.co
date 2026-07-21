@@ -11,7 +11,7 @@ import { menuItems } from "./menu-items";
 import { MobileDrawer } from "../drawers";
 import { UserProfile } from "./user-profile";
 
-export const Header = () => {
+export const Header: React.FC = () => {
   const pathname = usePathname();
   const { user } = useUserState();
 

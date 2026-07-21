@@ -1,6 +1,6 @@
 import { toast } from "@heroui/react";
 
-import { useAxios } from "./axios";
+import { useAxios } from "./axios-hook";
 import { useGlobalState, useModalState, useUserState } from "@/stores";
 import { deleteSession, updateSession } from "@/actions/session-action";
 

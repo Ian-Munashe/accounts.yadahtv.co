@@ -7,7 +7,7 @@ import { MdOutlineAlternateEmail } from "react-icons/md";
 import { Button, cn, Form, Key, Separator, Spinner, Surface, Tabs, toast } from "@heroui/react";
 
 import { Utils } from "@/lib/utils";
-import { useAxios } from "@/hooks/axios";
+import { useAxios } from "@/hooks/axios-hook";
 import { phoneCodes } from "@/phone-codes";
 import { AutocompleteInput, TextField } from "../inputs";
 import { EmailIdentifierValidationSchema, PhoneIdentifierValidationSchema } from "@/validations";

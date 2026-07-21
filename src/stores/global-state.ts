@@ -8,9 +8,9 @@ interface GlobalState {
 
 export const useGlobalState = create<GlobalState>()(
   immer((set) => ({
-    setIsProgress: (isProgress: boolean) =>
+    setIsProgress: (value: boolean) =>
       set((state) => {
-        state.isProgress = isProgress;
+        state.isProgress = value;
       }),
   })),
 );

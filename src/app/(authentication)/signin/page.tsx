@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Description, Separator, toast } from "@heroui/react";
 
-import { useAxios } from "@/hooks/axios";
+import { useAxios } from "@/hooks/axios-hook";
 import { useAuthentication } from "@/hooks";
 import { StepPill } from "@/components/step-pill";
 import { stepFadeAnimation } from "@/lib/animations";

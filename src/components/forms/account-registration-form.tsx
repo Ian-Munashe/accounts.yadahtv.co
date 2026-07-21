@@ -5,7 +5,7 @@ import { LuArrowLeft, LuGlobe, LuUser } from "react-icons/lu";
 import { Button, Description, Form, Link, Separator, Spinner, Surface, toast } from "@heroui/react";
 
 import { countries } from "@/countries";
-import { useAxios } from "@/hooks/axios";
+import { useAxios } from "@/hooks/axios-hook";
 import { useAuthentication } from "@/hooks";
 import { genderOptions } from "@/gender-options";
 import { RegisterValidationSchema } from "@/validations";
