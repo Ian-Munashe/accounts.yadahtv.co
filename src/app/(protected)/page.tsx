@@ -8,7 +8,7 @@ import { BreadCrumb } from "@/components/bread-crumb";
 import { useGlobalState, useUserState } from "@/stores";
 import { updateSession } from "@/actions/session-action";
 import { AddContactModal, VerifyOTPModal } from "@/components/modals";
-import { AccountInfoCard, PersonalInfoCard, ProfileCard, ContactInfoCard } from "@/components/cards";
+import { AccountInfoCard, PersonalInfoCard, ProfileCard, ContactInfoCard, NotificationsCard } from "@/components/cards";
 
 enum OTPAction {
   ADD_CONTACT = "add-contact",
@@ -104,6 +104,7 @@ export default function ProfilePage() {
               }}
             />
             <PersonalInfoCard />
+            <NotificationsCard />
           </div>
         </div>
       </div>

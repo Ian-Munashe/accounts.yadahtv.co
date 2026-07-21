@@ -19,7 +19,7 @@ import {
 } from "@heroui/react";
 
 import { mask } from "@/lib/mask";
-import { useAxios } from "@/hooks/axios";
+import { useAxios } from "@/hooks/axios-hook";
 import { useOTPWaitState } from "@/stores";
 
 interface Props {
