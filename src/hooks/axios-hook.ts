@@ -49,7 +49,7 @@ export const useAxios = () => {
           const session = await getSession();
           if (!session) throw new Error("No session");
 
-          const response = await axios.put("/user/refresh-token", { refreshToken: session.refreshToken });
+          const response = await interceptor.put("/user/refresh-token", { refreshToken: session.refreshToken });
           const { accessToken, refreshToken } = response.data;
           await updateSession({ accessToken, refreshToken });
           return accessToken;
