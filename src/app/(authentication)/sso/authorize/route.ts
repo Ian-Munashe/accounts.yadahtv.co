@@ -10,9 +10,20 @@ const axios = instance.create({
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const redirect = searchParams.get("redirect");
-  const deviceId = searchParams.get("deviceId");
-  const clientId = searchParams.get("clientId");
+  let redirect = searchParams.get("redirect");
+  let deviceId = searchParams.get("deviceId");
+  let clientId = searchParams.get("clientId");
+
+  if (redirect && (!deviceId || !clientId)) {
+    try {
+      const nestedUrl = new URL(redirect, request.url);
+      deviceId = deviceId || nestedUrl.searchParams.get("deviceId");
+      clientId = clientId || nestedUrl.searchParams.get("clientId");
+      redirect = nestedUrl.searchParams.get("redirect") || redirect;
+    } catch {
+      // Fallback in case redirect was just a relative string path
+    }
+  }
 
   if (redirect && deviceId && clientId) {
     const session = await getSession();
@@ -32,7 +43,7 @@ export async function GET(request: NextRequest) {
         return new NextResponse("Single Sign-On handshake failed", { status: error.response?.status || 500 });
       }
     }
-    return redirectToSignin(request, redirect);
+    return redirectToSignin(request);
   }
   return new NextResponse("Missing redirect parameter", { status: 400 });
 }
@@ -69,12 +80,12 @@ const refreshToken = async ({ request, redirect, deviceId, clientId }: RefreshTo
     return NextResponse.redirect(callbackUrl);
   } catch (error: any) {
     await deleteSession();
-    return redirectToSignin(request, redirect);
+    return redirectToSignin(request);
   }
 };
 
-const redirectToSignin = (request: NextRequest, redirect: string) => {
+const redirectToSignin = (request: NextRequest) => {
   const loginUrl = new URL("/signin", request.url);
-  loginUrl.searchParams.set("returnTo", redirect);
+  loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);
 };
