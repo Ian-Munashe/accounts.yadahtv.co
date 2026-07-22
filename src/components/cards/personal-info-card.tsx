@@ -34,7 +34,7 @@ export const PersonalInfoCard: React.FC = () => {
     <Surface variant="default" className="rounded-2xl p-6">
       <header className="mb-6 space-y-1">
         <h2 className="text-foreground flex items-center gap-2 text-base font-semibold">
-          <LuUser size={16} className="text-accent" />
+          <LuUser className="text-accent h-5 w-5" />
           Personal Information
         </h2>
         <Description>

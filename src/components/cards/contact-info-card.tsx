@@ -68,7 +68,7 @@ export const ContactInfoCard: React.FC<Props> = (props) => {
     <Surface variant="default" className="rounded-2xl p-4">
       <header className="mb-4 flex items-center justify-between">
         <h2 className="text-foreground flex items-center gap-2 text-sm font-semibold">
-          <MdOutlineAlternateEmail className="text-accent h-4 w-4" />
+          <MdOutlineAlternateEmail className="text-accent w-5 h-5" />
           Contact Information
         </h2>
         <Button size="sm" variant="secondary" className="h-8 gap-1 text-xs" onPress={props.onAddContact}>

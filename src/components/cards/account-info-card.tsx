@@ -46,7 +46,7 @@ export const AccountInfoCard: React.FC<Props> = (props) => {
     <Fragment>
       <Surface variant="default" className="flex flex-col gap-4 rounded-2xl p-6">
         <h2 className="text-foreground flex items-center gap-2 text-sm font-semibold">
-          <LuShield size={16} className="text-accent" />
+          <LuShield className="text-accent h-5 w-5" />
           Account Info
         </h2>
         <div className="space-y-3">
