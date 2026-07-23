@@ -6,20 +6,28 @@ import { useUserState } from "@/stores";
 import { updateSession } from "@/actions/session-action";
 import { PiBellSimpleRingingBold } from "react-icons/pi";
 
+const APP_LABELS: Record<string, string> = {
+  yb: "Yadah Busket Updates",
+};
+
 export const NotificationsCard: React.FC = () => {
   const { interceptor } = useAxios();
   const { user, updateUser } = useUserState();
 
-  const handleNotificationToggle = async (notification: boolean) => {
+  const notificationsMap = user?.metadata?.notifications || {};
+
+  const handleNotificationToggle = async (appKey: string, enabled: boolean) => {
     if (!user) return;
 
-    const updatedMetadata = { ...user.metadata, notifications: notification };
+    const updatedNotifications = { ...notificationsMap, [appKey]: enabled };
+    const updatedMetadata = { ...user.metadata, notifications: updatedNotifications };
+
     updateUser({ metadata: updatedMetadata });
 
     try {
-      const response = await interceptor.put("/utils/notifications-toggle", { notification });
+      const response = await interceptor.put("/utils/notifications-toggle", { enabled, application: appKey });
       await updateSession({ user: { ...user, metadata: updatedMetadata } });
-      toast.success(response.data.message);
+      toast.success(response.data.message || "Notification preference updated.");
     } catch (error: any) {
       updateUser({ metadata: user.metadata });
       toast.danger(error.response?.data?.message || error.message);
@@ -35,15 +43,22 @@ export const NotificationsCard: React.FC = () => {
         </h2>
         <Description>Manage your notification options below. Your preferences will be saved automatically.</Description>
       </header>
-      <div className="flex items-center justify-between">
-        <span>Receive Updates</span>
-        <Switch isSelected={user?.metadata?.notifications} onChange={handleNotificationToggle}>
-          <Switch.Content>
-            <Switch.Control>
-              <Switch.Thumb />
-            </Switch.Control>
-          </Switch.Content>
-        </Switch>
+      <div className="space-y-4">
+        {Object.entries(notificationsMap).map(([appKey, isEnabled]) => {
+          const label = APP_LABELS[appKey] || appKey.toUpperCase();
+          return (
+            <div key={appKey} className="flex items-center justify-between">
+              <span className="text-foreground text-sm font-medium">{label}</span>
+              <Switch isSelected={Boolean(isEnabled)} onChange={(checked) => handleNotificationToggle(appKey, checked)}>
+                <Switch.Content>
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Content>
+              </Switch>
+            </div>
+          );
+        })}
       </div>
     </Surface>
   );

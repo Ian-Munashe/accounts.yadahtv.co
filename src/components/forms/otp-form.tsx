@@ -19,8 +19,8 @@ import {
 } from "@heroui/react";
 
 import { mask } from "@/lib/mask";
-import { useAxios } from "@/hooks/axios-hook";
 import { useOTPWaitState } from "@/stores";
+import { useAxios } from "@/hooks/axios-hook";
 
 interface Props {
   action: string;
@@ -40,16 +40,19 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
 
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: { otp: value, identifier: props.identifier, action: props.action },
     validationSchema: object().shape({ otp: string().max(6, "OTP must be 6 digits").required("OTP is required") }),
     onSubmit: async (values) => {
+      setIsSubmitting(true);
       try {
         const response = await axios.post("/otp/verify", values);
         props.onSuccess(response.data.token);
       } catch (error: any) {
+        setIsSubmitting(false);
         toast.danger(error?.response?.data?.message ?? error.message);
       }
     },
@@ -87,7 +90,7 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
       )}
       variant={isModalContext ? "transparent" : "default"}
     >
-      <header className="flex flex-col items-center gap-3 text-center w-full">
+      <header className="flex w-full flex-col items-center gap-3 text-center">
         <span className="bg-accent/10 text-accent flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl">
           <LuShieldCheck size={22} />
         </span>
@@ -135,7 +138,7 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
             )}
           </div>
         </div>
-        <Button fullWidth isDisabled={value.length < 6} isPending={formik.isSubmitting} type="submit" size="lg">
+        <Button fullWidth isDisabled={value.length < 6} isPending={isSubmitting} type="submit" size="lg">
           {({ isPending }) => (
             <React.Fragment>{isPending ? <Spinner color="current" size="sm" /> : null} Verify Code</React.Fragment>
           )}

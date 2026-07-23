@@ -4,6 +4,6 @@ import { useGlobalState } from "./global-state";
 import { useOTPWaitState } from "./otp-wait.state";
 import { useDeviceInfoState } from "./device-info-state";
 
-import { useUsersStore } from "./data-state";
+import { useUsersListState } from "./data-state";
 
-export { useDeviceInfoState, useGlobalState, useModalState, useUserState, useUsersStore, useOTPWaitState };
+export { useDeviceInfoState, useGlobalState, useModalState, useUserState, useUsersListState, useOTPWaitState };

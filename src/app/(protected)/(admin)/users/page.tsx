@@ -1,15 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { LuSearch } from "react-icons/lu";
-import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, cn, InputGroup, Spinner } from "@heroui/react";
 
-import { useAxios } from "@/hooks";
-import { useUsersStore } from "@/stores";
+import { useUsersListState } from "@/stores";
 import { UserCard } from "@/components/cards";
 import { NoData } from "@/components/no-data";
 import { EditUserModal } from "@/components/modals";
 import { Pagination } from "@/components/pagination";
+import { useAxios, usePaginatedQuery } from "@/hooks";
 import { BreadCrumb } from "@/components/bread-crumb";
 import { PermissionsDrawer } from "@/components/drawers";
 
@@ -21,25 +22,46 @@ const roles: ISelectOption[] = [
 ];
 
 export default function Admin() {
+  const queryClient = useQueryClient();
   const { interceptor } = useAxios();
-  const { data, isLoading, page, totalPages, fetchData, setPage, updateData, search, setSearch, setFilters } =
-    useUsersStore();
+  const { page, setPage, search, setSearch } = useUsersListState();
 
-  const [user, setUser] = useState<IUser | undefined>();
+  const [selectedUser, setSelectedUser] = useState<IUser | undefined>();
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [role, setRole] = useState<string>("all");
   const [permissionsDrawerOpen, setPermissionsDrawerOpen] = useState(false);
 
   const handleEdit = (user: IUser) => {
-    setUser(user);
+    setSelectedUser(user);
     setEditUserOpen(true);
   };
 
-  useEffect(() => {
-    if (role && role !== "all") setFilters([role]);
-    else setFilters([]);
-    fetchData(interceptor, "/admin/users");
-  }, [interceptor, page, role]);
+  const handleRoleChange = (newRole: string) => {
+    setRole(newRole);
+    setPage(1);
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+  };
+
+  const handleUserUpdateSuccess = (updatedUser: IUser) => {
+    queryClient.setQueriesData({ queryKey: ["users"] }, (oldData: any) => {
+      if (!oldData) return oldData;
+      if (Array.isArray(oldData)) return oldData.map((u) => (u._id === updatedUser._id ? updatedUser : u));
+      return {
+        ...oldData,
+        results: oldData.results?.map((u: IUser) => (u._id === updatedUser._id ? updatedUser : u)),
+      };
+    });
+    setSelectedUser(updatedUser);
+  };
+
+  const { data, isFetching } = usePaginatedQuery<IUser>("users", "/admin/users", {
+    page,
+    search,
+    filters: role !== "all" ? [role] : [],
+  });
+
+  const users = data?.results ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   return (
     <div className="space-y-8">
@@ -62,7 +84,7 @@ export default function Admin() {
             key={value}
             size="sm"
             variant="outline"
-            onPress={() => setRole(value)}
+            onPress={() => handleRoleChange(value)}
             className={cn(
               "text-muted bg-surface hover:border-accent/50 px-4 py-1.5 text-xs font-medium transition-all",
               {
@@ -74,38 +96,42 @@ export default function Admin() {
           </Button>
         ))}
       </div>
-      {isLoading && (
+      {isFetching && (
         <div className="flex justify-center">
           <Spinner />
         </div>
       )}
-      {!isLoading && data.length === 0 && <NoData title="No uers found" description="There aren't any users found." />}
-      {!isLoading && data.length > 0 && (
+      {!isFetching && users.length === 0 && (
+        <NoData title="No users found" description="There are not any users found." />
+      )}
+      {users.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((user: IUser) => (
+          {users.map((user: IUser) => (
             <UserCard key={user._id} user={user} onEdit={handleEdit} />
           ))}
         </div>
       )}
-      <Pagination totalPages={totalPages} currentPage={page} onJump={setPage} onNext={setPage} onPrevious={setPage} />
+      {totalPages > 0 && (
+        <Pagination totalPages={totalPages} currentPage={page} onJump={setPage} onNext={setPage} onPrevious={setPage} />
+      )}
       {editUserOpen && (
         <EditUserModal
-          user={user}
+          user={selectedUser}
           isOpen={editUserOpen}
-          onUpdateSuccess={(user) => updateData(user._id, user)}
+          onUpdateSuccess={handleUserUpdateSuccess}
           onConfigurePermissions={() => setPermissionsDrawerOpen(true)}
           onOpenChange={(isOpen) => {
             setEditUserOpen(isOpen);
-            if (!isOpen) setUser(undefined);
+            if (!isOpen) setSelectedUser(undefined);
           }}
         />
       )}
-      {user && (
+      {selectedUser && (
         <PermissionsDrawer
-          permissions={user.permissions}
+          permissions={selectedUser.permissions}
           isOpen={permissionsDrawerOpen}
           onOpenChange={setPermissionsDrawerOpen}
-          onSave={(permissions) => setUser((prev: any) => ({ ...prev, permissions }))}
+          onSave={(permissions) => setSelectedUser((prev: any) => ({ ...prev, permissions }))}
         />
       )}
     </div>

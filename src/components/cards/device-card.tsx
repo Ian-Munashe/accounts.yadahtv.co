@@ -6,7 +6,6 @@ import {
   LuClock,
   LuBell,
   LuBellOff,
-  LuLogOut,
   LuTrash2,
   LuSmartphone,
   LuGlobe,
@@ -14,7 +13,7 @@ import {
   LuTablet,
 } from "react-icons/lu";
 
-import { useDeviceInfoState } from "@/stores";
+import { useDeviceInfoState, useUserState } from "@/stores";
 
 interface Props {
   device: IDevice;
@@ -40,6 +39,7 @@ const PlatformIcon = ({ platform }: { platform: string }) => {
 };
 
 export const DeviceCard: React.FC<Props> = (props) => {
+  const { user } = useUserState();
   const { deviceId } = useDeviceInfoState();
 
   const device = props.device;
@@ -48,7 +48,7 @@ export const DeviceCard: React.FC<Props> = (props) => {
     addSuffix: true,
   });
 
-  const [notification, setNotification] = useState(device.notifications.accounts);
+  const [notification, setNotification] = useState(user?.metadata?.notifications);
 
   return (
     <Surface

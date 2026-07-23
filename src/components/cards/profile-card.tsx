@@ -32,13 +32,18 @@ export const ProfileCard: React.FC = () => {
       <div className="text-center">
         <p className="text-foreground text-lg font-semibold">{user?.fullname}</p>
         <p className="text-muted text-sm">{user?.identifier}</p>
-        <div className="mt-2">
+        <div className="mt-2 flex items-center justify-center gap-2">
           <Chip
             size="sm"
             className={`lowercase ${roleClassMap[user?.role!] ?? "bg-purple-500/15 text-purple-700 dark:text-purple-400"}`}
           >
             {user?.role}
           </Chip>
+          {user?.metadata?.codename && (
+            <Chip size="sm" className="bg-blue-500/15 font-medium text-blue-700 dark:text-blue-400">
+              🚩 {user.metadata.codename}
+            </Chip>
+          )}
         </div>
       </div>
     </Surface>
