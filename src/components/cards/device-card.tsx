@@ -6,7 +6,6 @@ import {
   LuClock,
   LuBell,
   LuBellOff,
-  LuLogOut,
   LuTrash2,
   LuSmartphone,
   LuGlobe,

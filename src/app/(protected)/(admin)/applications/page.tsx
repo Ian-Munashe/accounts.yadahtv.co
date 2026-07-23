@@ -3,6 +3,7 @@
 import { LuPlus } from "react-icons/lu";
 import { useEffect, useState } from "react";
 import { Button, toast } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAxios } from "@/hooks";
 import { NoData } from "@/components/no-data";
@@ -14,10 +15,10 @@ import { useGlobalState, useModalState } from "@/stores";
 export default function ApplicationsPage() {
   const { interceptor } = useAxios();
   const { showModal } = useModalState();
-  const { isProgress, setIsProgress } = useGlobalState();
+  const { setIsProgress } = useGlobalState();
+  const queryClient = useQueryClient();
 
-  const [application, setApplication] = useState<IApplication>();
-  const [applications, setApplications] = useState<IApplication[]>([]);
+  const [selectedApplication, setSelectedApplication] = useState<IApplication>();
   const [applicationRegisterOpen, setApplicationRegisterOpen] = useState(false);
   const [deletingApplicationId, setDeletingApplicationId] = useState<string | undefined>(undefined);
 
@@ -31,7 +32,7 @@ export default function ApplicationsPage() {
         setDeletingApplicationId(_id);
         try {
           const response = await interceptor.delete(`/applications/${_id}`);
-          setApplications((prev) => prev.filter((i) => i._id !== _id));
+          queryClient.setQueryData<IApplication[]>(["applications"], (app = []) => app.filter((i) => i._id !== _id));
           toast.success(response.data.message);
         } catch (error: any) {
           toast.danger(error.response?.data?.message || error.message);
@@ -42,19 +43,27 @@ export default function ApplicationsPage() {
     });
   };
 
-  useEffect(() => {
-    (async () => {
-      setIsProgress(true);
+  const {
+    data: applications = [],
+    isPending,
+    isFetching,
+  } = useQuery<IApplication[]>({
+    queryKey: ["applications"],
+    queryFn: async () => {
       try {
         const response = await interceptor.get("/applications");
-        setApplications(response.data);
+        return response.data;
       } catch (error: any) {
         toast.danger(error.response?.data?.message || error.message);
-      } finally {
-        setIsProgress(false);
+        throw error;
       }
-    })();
-  }, []);
+    },
+  });
+
+  useEffect(() => {
+    setIsProgress(isFetching);
+    return () => setIsProgress(false);
+  }, [isFetching, setIsProgress]);
 
   return (
     <div className="space-y-8">
@@ -63,15 +72,15 @@ export default function ApplicationsPage() {
           <LuPlus size={16} /> Register Application
         </Button>
       </BreadCrumb>
-      {!isProgress && applications.length === 0 && <NoData title="No applications found" />}
-      {!isProgress && applications.length > 0 && (
+      {!isPending && applications.length === 0 && <NoData title="No applications found" />}
+      {!isPending && applications.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {applications.map((application) => (
             <ApplicationCard
               key={application._id}
               application={application}
               onEdit={(value) => {
-                setApplication(value);
+                setSelectedApplication(value);
                 setApplicationRegisterOpen(true);
               }}
               onDelete={handleDeleteApplication}
@@ -83,14 +92,16 @@ export default function ApplicationsPage() {
       {applicationRegisterOpen && (
         <RegisterAppModal
           isOpen={applicationRegisterOpen}
-          application={application}
+          application={selectedApplication}
           onOpenChange={(value) => {
             setApplicationRegisterOpen(value);
-            setApplication(undefined);
+            setSelectedApplication(undefined);
           }}
-          onSuccess={(application) => setApplications((prev) => [application, ...prev])}
-          onEditSuccess={(application) =>
-            setApplications((prev) => prev.map((i) => (i._id === application._id ? application : i)))
+          onSuccess={(app) => queryClient.setQueryData<IApplication[]>(["applications"], (old = []) => [app, ...old])}
+          onEditSuccess={(app) =>
+            queryClient.setQueryData<IApplication[]>(["applications"], (old = []) =>
+              old.map((item) => (item._id === app._id ? app : item)),
+            )
           }
         />
       )}

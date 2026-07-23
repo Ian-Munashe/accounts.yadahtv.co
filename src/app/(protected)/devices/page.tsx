@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Chip, toast } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAxios } from "@/hooks";
 import { NoData } from "@/components/no-data";
@@ -12,9 +13,9 @@ import { useGlobalState, useModalState } from "@/stores";
 export default function DevicesPage() {
   const { interceptor } = useAxios();
   const { showModal } = useModalState();
-  const { isProgress, setIsProgress } = useGlobalState();
+  const { setIsProgress } = useGlobalState();
+  const queryClient = useQueryClient();
 
-  const [devices, setDevices] = useState<IDevice[]>([]);
   const [signingOutDeviceId] = useState<string | undefined>(undefined);
   const [removingDeviceId, setRemovingDeviceId] = useState<string | undefined>(undefined);
 
@@ -28,7 +29,10 @@ export default function DevicesPage() {
         setRemovingDeviceId(_id);
         try {
           const response = await interceptor.delete(`/user/devices/delete/${_id}`);
-          setDevices((prev) => prev.filter((i) => i._id !== _id));
+          queryClient.setQueryData<IDevice[]>(["user-devices"], (devices) => {
+            if (!devices) return [];
+            return devices.filter((d) => d._id !== _id);
+          });
           toast.success(response.data.message);
         } catch (error: any) {
           toast.danger(error.response?.data?.message || error.message);
@@ -39,19 +43,27 @@ export default function DevicesPage() {
     });
   };
 
-  useEffect(() => {
-    (async () => {
-      setIsProgress(true);
+  const {
+    data: devices = [],
+    isPending,
+    isFetching,
+  } = useQuery<IDevice[]>({
+    queryKey: ["user-devices"],
+    queryFn: async () => {
       try {
         const response = await interceptor.get("/user/devices");
-        setDevices(response.data);
+        return response.data;
       } catch (error: any) {
         toast.danger(error.response?.data?.message || error.message);
-      } finally {
-        setIsProgress(false);
+        throw error;
       }
-    })();
-  }, []);
+    },
+  });
+
+  useEffect(() => {
+    setIsProgress(isFetching);
+    return () => setIsProgress(false);
+  }, [isFetching, setIsProgress]);
 
   return (
     <div className="space-y-8">
@@ -62,8 +74,8 @@ export default function DevicesPage() {
           </Chip>
         )}
       </BreadCrumb>
-      {!isProgress && devices.length === 0 && <NoData title="No devices found" />}
-      {!isProgress && devices.length > 0 && (
+      {!isPending && devices.length === 0 && <NoData title="No devices found" />}
+      {!isPending && devices.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {devices.map((device: IDevice) => (
             <DeviceCard
