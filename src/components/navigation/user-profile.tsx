@@ -34,6 +34,15 @@ export const UserProfile: React.FC = () => {
               .join("")}
           </Avatar.Fallback>
         </Avatar>
+        <span className="hidden min-w-0 flex-col items-start sm:flex">
+          <span
+            className="max-w-17.5 overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap"
+            title={user?.fullname}
+          >
+            {user!.fullname?.length > 12 ? `${user?.fullname.slice(0, 22)}...` : user?.fullname}
+          </span>
+          <span className="text-muted truncate text-xs">{user?.role}</span>
+        </span>
       </Dropdown.Trigger>
       <Dropdown.Popover placement="bottom end">
         <div className="px-3 pt-3 pb-1">
