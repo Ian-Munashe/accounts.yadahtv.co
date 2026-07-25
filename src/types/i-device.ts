@@ -10,5 +10,4 @@ interface IDevice {
   operatingSystem: string;
   lastSeen: Date;
   metadata?: Record<string, any>;
-  notifications: Record<string, boolean>;
 }
