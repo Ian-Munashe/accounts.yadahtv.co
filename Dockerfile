@@ -1,36 +1,28 @@
-FROM node:20-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Step 1: Use official Bun Alpine image for fast package installations
+FROM oven/bun:alpine AS deps
 WORKDIR /app
 
-# Install bun globally since nixpacks detected bun in your repo
-RUN npm install -g bun
+# Copy dependency manifests (supports both bun.lock and bun.lockb)
+COPY package.json bun.lock* bun.lockb* ./
 
-COPY package.json bun.lockb* package-lock.json* yarn.lock* pnpm-lock.yaml* ./
-RUN \
-    if [ -f bun.lockb ]; then bun install --frozen-lockfile; \
-    elif [ -f package-lock.json ]; then npm ci; \
-    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-    elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-    else npm i; \
-    fi
+# Install dependencies using Bun's native package manager
+RUN bun install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
+# Step 2: Build Next.js app using Bun runtime
+FROM oven/bun:alpine AS builder
 WORKDIR /app
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables for build phase
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+# Run Next.js build using Bun
+RUN bun run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Step 3: Minimal Node.js production runner (for maximum stability with Next.js)
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -41,8 +33,11 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy standalone build from Next.js output
-COPY --from=builder /app/public ./public
+# Safely handle missing public folder without crashing Docker build
+COPY . .
+RUN if [ -d "public" ]; then cp -r public ./public; else mkdir -p ./public; fi
+
+# Copy Next.js standalone build artifacts
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
