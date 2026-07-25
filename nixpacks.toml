@@ -1,2 +1,4 @@
-[providers]
-node = "20"
+providers = ["node"]
+
+[node]
+version = "20"
