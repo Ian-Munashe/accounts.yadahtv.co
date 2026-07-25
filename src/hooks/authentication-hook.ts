@@ -31,7 +31,6 @@ export const useAuthentication = () => {
 
   const getUser = async (): Promise<boolean> => {
     try {
-      console.log("HEADERS: ", interceptor.defaults.headers);
       const response = await interceptor.get("/user");
       const user: IUser = response.data;
       await updateSession({ user });
