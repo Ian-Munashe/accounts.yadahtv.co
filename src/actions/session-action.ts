@@ -25,6 +25,7 @@ export const updateSession = async ({ accessToken, refreshToken, user }: ISessio
   if (accessToken) session.accessToken = accessToken;
   if (refreshToken) session.refreshToken = refreshToken;
   await session.save();
+  console.log("SERVER ACTION: ", session);
   return JSON.parse(JSON.stringify(session));
 };
 
