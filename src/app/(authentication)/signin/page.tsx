@@ -52,9 +52,9 @@ export default function SignIn() {
       const isSuccess = await getUser();
       if (isSuccess) {
         const returnTo = searchParams.get("returnTo");
-        // returnTo
-        //   ? (window.location.href = `/sso/authorize?redirect=${encodeURIComponent(returnTo)}`)
-        //   : (window.location.href = "/");
+        returnTo
+          ? (window.location.href = `/sso/authorize?redirect=${encodeURIComponent(returnTo)}`)
+          : (window.location.href = "/");
       }
     } catch (error: any) {
       toast.danger(error?.response?.data?.message ?? error.message);
