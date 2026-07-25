@@ -2,7 +2,7 @@
 FROM oven/bun:alpine AS deps
 WORKDIR /app
 
-# Copy dependency manifests (supports both bun.lock and bun.lockb)
+# Copy dependency manifests
 COPY package.json bun.lock* bun.lockb* ./
 
 # Install dependencies using Bun's native package manager
@@ -33,9 +33,9 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Safely handle missing public folder without crashing Docker build
-COPY . .
-RUN if [ -d "public" ]; then cp -r public ./public; else mkdir -p ./public; fi
+# Safely copy public directory from builder if present, or create empty if missing
+RUN mkdir -p public
+COPY --from=builder /app/publi[c] ./public
 
 # Copy Next.js standalone build artifacts
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
