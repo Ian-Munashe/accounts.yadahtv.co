@@ -12,7 +12,6 @@ export const useAxios = () => {
 
   const [axiosInstances, _] = useState(() => {
     const options: CreateAxiosDefaults = {
-      withCredentials: true,
       baseURL: process.env.NEXT_PUBLIC_API_URL,
       headers: { "Content-Type": "application/json", "X-Client-Id": clientId },
     };
