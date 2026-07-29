@@ -7,8 +7,10 @@ export const sessionOptions: SessionOptions = {
   cookieName: String(process.env.NEXT_COOKIE_NAME),
   cookieOptions: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: Utils.instance.toSeconds(Utils.instance.futureDateTime("90d")),
     sameSite: "lax",
+    path: "/",
+    secure: false,
+    // secure: process.env.NODE_ENV === "production",
+    maxAge: Utils.instance.toSeconds(Utils.instance.futureDateTime("90d")),
   },
 };

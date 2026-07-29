@@ -1,11 +1,11 @@
 {
   "name": "accounts.yadahtv.co",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "eslint"
   },
   "dependencies": {

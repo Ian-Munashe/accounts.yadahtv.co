@@ -1,17 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Surface, Chip, Separator, Switch, Button, Spinner } from "@heroui/react";
-import {
-  LuCircleCheck,
-  LuClock,
-  LuBell,
-  LuBellOff,
-  LuTrash2,
-  LuSmartphone,
-  LuGlobe,
-  LuMonitor,
-  LuTablet,
-} from "react-icons/lu";
+import { Surface, Chip, Separator, Button, Spinner } from "@heroui/react";
+import { LuCircleCheck, LuClock, LuTrash2, LuSmartphone, LuGlobe, LuMonitor, LuTablet } from "react-icons/lu";
 
 import { useDeviceInfoState, useUserState } from "@/stores";
 
@@ -39,7 +29,6 @@ const PlatformIcon = ({ platform }: { platform: string }) => {
 };
 
 export const DeviceCard: React.FC<Props> = (props) => {
-  const { user } = useUserState();
   const { deviceId } = useDeviceInfoState();
 
   const device = props.device;
@@ -47,8 +36,6 @@ export const DeviceCard: React.FC<Props> = (props) => {
   const lastSeenText = formatDistanceToNow(device.lastSeen ? new Date(device.lastSeen) : new Date(), {
     addSuffix: true,
   });
-
-  const [notification, setNotification] = useState(user?.metadata?.notifications);
 
   return (
     <Surface
@@ -92,19 +79,6 @@ export const DeviceCard: React.FC<Props> = (props) => {
         </div>
       </div>
       <Separator />
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs">
-          {notification ? (
-            <LuBell size={14} className="text-success" />
-          ) : (
-            <LuBellOff size={14} className="text-muted" />
-          )}
-          <span className={notification ? "text-success" : "text-muted"}>
-            Notifications {notification ? "on" : "off"}
-          </span>
-        </div>
-        <Switch size="sm" isSelected={notification} onChange={setNotification} />
-      </div>
       <div className="flex justify-end gap-2">
         <Button
           isIconOnly
