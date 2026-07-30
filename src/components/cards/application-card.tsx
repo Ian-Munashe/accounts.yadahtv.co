@@ -75,15 +75,17 @@ export const ApplicationCard: React.FC<Props> = (props) => {
           <p className="text-foreground bg-default flex-1 overflow-hidden rounded-lg px-3 py-1.5 font-mono text-xs text-ellipsis whitespace-nowrap">
             {showToken ? props.application.token : "••••••••••••••••••••••"}
           </p>
-          <button
+          <Button
+            size="sm"
+            variant="ghost"
             onClick={() => setShowToken((v) => !v)}
             className="text-muted hover:text-foreground shrink-0 text-xs transition-colors"
           >
             {showToken ? "Hide" : "Show"}
-          </button>
-          <button onClick={copyToken} className="text-muted hover:text-accent shrink-0 transition-colors">
-            <LuCopy size={14} />
-          </button>
+          </Button>
+          <Button isIconOnly size="sm" variant="ghost" className="text-muted" onPress={copyToken}>
+            <LuCopy className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
       <div>
