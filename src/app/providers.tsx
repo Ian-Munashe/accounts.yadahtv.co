@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Preloader } from "@/components/preloader";
 import { getSession } from "@/actions/session-action";
 import { useDeviceInfoState, useUserState } from "@/stores";
-import { AlertModal, LoadingModal } from "@/components/modals";
+import { AlertModal, LoadingModal, PWAInstallModal } from "@/components/modals";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const { setUser } = useUserState();
@@ -19,12 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000 * 60 * 5, // Cache data for 5 minutes (prevents refetching on saves)
-            refetchOnWindowFocus: false, // Prevents auto-refetching when switching browser tabs
-          },
-        },
+        defaultOptions: { queries: { staleTime: 1000 * 60 * 5, refetchOnWindowFocus: false } },
       }),
   );
 
@@ -44,6 +39,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {children}
         <AlertModal />
         <LoadingModal />
+        <PWAInstallModal />
         <Toast.Provider placement="bottom" />
       </NextThemesProvider>
     </QueryClientProvider>
