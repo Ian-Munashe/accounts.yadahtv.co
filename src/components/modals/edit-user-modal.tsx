@@ -67,10 +67,10 @@ export const EditUserModal: React.FC<Props> = (props) => {
               <div className="flex flex-col gap-2">
                 <p className="text-foreground text-sm font-medium">Role</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {ALL_ROLES.map((role) => (
+                  {ALL_ROLES.map((role, index) => (
                     <Button
                       fullWidth
-                      key={role}
+                      key={index}
                       size="sm"
                       variant="outline"
                       className={cn(
@@ -89,8 +89,9 @@ export const EditUserModal: React.FC<Props> = (props) => {
               <div className="flex flex-col gap-2">
                 <p className="text-foreground text-sm font-medium">Account Status</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {ALL_STATUSES.map((status) => (
+                  {ALL_STATUSES.map((status, index) => (
                     <Button
+                      key={index}
                       size="sm"
                       variant="outline"
                       fullWidth
