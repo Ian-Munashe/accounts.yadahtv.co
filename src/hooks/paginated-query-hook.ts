@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+"use client";
+
 import { AxiosError } from "axios";
-import { toast } from "@heroui/react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 import { useAxios } from "@/hooks";
+import { useEffect } from "react";
+import { toast } from "@heroui/react";
 
 export interface PaginatedResponse<T> {
   results: T[];
@@ -16,12 +18,13 @@ export interface PaginatedParams {
   page?: number;
   search?: string;
   filters?: string[];
+  enabled?: boolean;
   [key: string]: any;
 }
 
 export function usePaginatedQuery<T = any>(queryKeyPrefix: string, endpoint: string, params: PaginatedParams = {}) {
   const { interceptor } = useAxios();
-  const { page = 1, search = "", filters = [], ...extraParams } = params;
+  const { page = 1, search = "", filters = [], enabled = true, ...extraParams } = params;
 
   const query = useQuery<PaginatedResponse<T>, AxiosError<{ message?: string }>>({
     queryKey: [queryKeyPrefix, { endpoint, page, search, filters, ...extraParams }],
@@ -51,6 +54,7 @@ export function usePaginatedQuery<T = any>(queryKeyPrefix: string, endpoint: str
       const response = await interceptor.get(`${endpoint}?${queryParams.toString()}`);
       return response.data;
     },
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
   });
