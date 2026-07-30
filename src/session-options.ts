@@ -9,8 +9,7 @@ export const sessionOptions: SessionOptions = {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: false, // TODO Fix here
-    // secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production",
     maxAge: Utils.instance.toSeconds(Utils.instance.futureDateTime("90d")),
   },
 };
