@@ -7,7 +7,7 @@ interface IDevice {
   fcmToken?: string;
   updatedAt: string;
   createdAt: string;
+  loggedIn?: boolean;
   operatingSystem: string;
-  lastSeen: Date;
   metadata?: Record<string, any>;
 }

@@ -1,15 +1,15 @@
 import React from "react";
-import { formatDistanceToNow } from "date-fns";
 import { Surface, Chip, Separator, Button, Spinner } from "@heroui/react";
-import { LuCircleCheck, LuClock, LuTrash2, LuSmartphone, LuGlobe, LuMonitor, LuTablet } from "react-icons/lu";
+import { LuCircleCheck, LuLogIn, LuLogOut, LuTrash2, LuSmartphone, LuGlobe, LuMonitor, LuTablet } from "react-icons/lu";
 
-import { useDeviceInfoState, useUserState } from "@/stores";
+import { useDeviceInfoState } from "@/stores";
 
 interface Props {
   device: IDevice;
   isRemovingDevice?: boolean;
   isSigningOutDevice?: boolean;
   onRemove: (value: IDevice) => void;
+  onSignOut?: (value: IDevice) => void;
 }
 
 const PlatformIcon = ({ platform }: { platform: string }) => {
@@ -33,9 +33,7 @@ export const DeviceCard: React.FC<Props> = (props) => {
 
   const device = props.device;
   const isCurrent = device.deviceId === deviceId;
-  const lastSeenText = formatDistanceToNow(device.lastSeen ? new Date(device.lastSeen) : new Date(), {
-    addSuffix: true,
-  });
+  const isLoggedIn = Boolean(device.loggedIn);
 
   return (
     <Surface
@@ -67,10 +65,16 @@ export const DeviceCard: React.FC<Props> = (props) => {
       <Separator />
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div>
-          <p className="text-muted">Last Active</p>
+          <p className="text-muted">Status</p>
           <div className="mt-0.5 flex items-center gap-1">
-            <LuClock size={12} className="text-muted" />
-            <p className="text-foreground">{lastSeenText}</p>
+            {isLoggedIn ? (
+              <LuLogIn size={12} className="text-green-600 dark:text-green-400" />
+            ) : (
+              <LuLogOut size={12} className="text-muted" />
+            )}
+            <p className={isLoggedIn ? "text-green-700 dark:text-green-400" : "text-foreground"}>
+              {isLoggedIn ? "Logged in" : "Logged out"}
+            </p>
           </div>
         </div>
         <div>
@@ -80,14 +84,25 @@ export const DeviceCard: React.FC<Props> = (props) => {
       </div>
       <Separator />
       <div className="flex justify-end gap-2">
+        {isLoggedIn && props.onSignOut && (
+          <Button
+            size="sm"
+            isIconOnly
+            isDisabled={isCurrent}
+            isPending={props.isSigningOutDevice}
+            onPress={() => props.onSignOut?.(device)}
+            className="flex items-center gap-2 bg-amber-600 disabled:bg-muted/20"
+          >
+            {({ isPending }) => (isPending ? <Spinner size="sm" color="current" /> : <LuLogOut />)}
+          </Button>
+        )}
         <Button
           isIconOnly
           size="sm"
-          fullWidth
           isDisabled={isCurrent}
           isPending={props.isRemovingDevice}
           onPress={() => props.onRemove(device)}
-          className="bg-red-600"
+          className="disabled:bg-muted/20"
         >
           {({ isPending }) => (isPending ? <Spinner size="sm" color="current" /> : <LuTrash2 />)}
         </Button>
