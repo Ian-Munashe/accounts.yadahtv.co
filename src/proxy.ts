@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { getSession } from "./actions/session-action";
+import { createAppUrl } from "@/lib/request-url";
 
 const guestRoutes = ["/signin", "/join"];
 const superadminRoutes = ["/applications"];
@@ -16,7 +17,7 @@ export async function proxy(request: NextRequest) {
 
   const isGuestRoute = guestRoutes.some((route) => pathname.startsWith(route));
   if (isGuestRoute) {
-    if (isAuthenticated) return NextResponse.redirect(new URL("/", request.url));
+    if (isAuthenticated) return NextResponse.redirect(createAppUrl(request, "/"));
     return NextResponse.next();
   }
 
@@ -26,15 +27,15 @@ export async function proxy(request: NextRequest) {
   });
 
   if (isProtected) {
-    if (!isAuthenticated) return NextResponse.redirect(new URL("/signin", request.url));
+    if (!isAuthenticated) return NextResponse.redirect(createAppUrl(request, "/signin"));
 
     const userRole = session.user?.role;
     const isSuperadminRoute = superadminRoutes.some((route) => pathname.startsWith(route));
-    if (isSuperadminRoute && userRole !== "superadmin") return NextResponse.redirect(new URL("/", request.url));
+    if (isSuperadminRoute && userRole !== "superadmin") return NextResponse.redirect(createAppUrl(request, "/"));
 
     if (pathname.startsWith("/users")) {
       const isAllowedRole = userRole === "superadmin" || userRole === "admin";
-      if (!isAllowedRole) return NextResponse.redirect(new URL("/", request.url));
+      if (!isAllowedRole) return NextResponse.redirect(createAppUrl(request, "/"));
     }
   }
 
