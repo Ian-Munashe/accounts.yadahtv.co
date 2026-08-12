@@ -182,7 +182,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   output: "standalone",
   turbopack: {},
-  allowedDevOrigins: ["10.10.1.2", "10.10.1.5", "localhost"],
+  allowedDevOrigins: ["10.10.1.2", "10.10.1.5"],
 };
 
 export default withPWA(nextConfig as any);
