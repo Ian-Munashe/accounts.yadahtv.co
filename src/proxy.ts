@@ -47,5 +47,3 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
-
-// http://10.10.1.2:3001/sso/authorize?deviceId=...&clientId=theview&redirect=theviewyadahtvco%3A%2F%2Fsso%2Fcallback
