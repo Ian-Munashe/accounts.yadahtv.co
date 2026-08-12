@@ -2,6 +2,7 @@ import instance from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
 import { deleteSession, getSession, updateSession } from "@/actions/session-action";
+import { createAppUrl, getPublicOrigin } from "@/lib/request-url";
 
 const axios = instance.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   if (redirect && (!deviceId || !clientId)) {
     try {
-      const nestedUrl = new URL(redirect, request.url);
+      const nestedUrl = new URL(redirect, `${getPublicOrigin(request)}/`);
       deviceId = deviceId || nestedUrl.searchParams.get("deviceId");
       clientId = clientId || nestedUrl.searchParams.get("clientId");
       redirect = nestedUrl.searchParams.get("redirect") || redirect;
@@ -85,7 +86,7 @@ const refreshToken = async ({ request, redirect, deviceId, clientId }: RefreshTo
 };
 
 const redirectToSignin = (request: NextRequest) => {
-  const loginUrl = new URL("/signin", request.url);
+  const loginUrl = createAppUrl(request, "/signin");
   loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);
 };
