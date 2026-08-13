@@ -1,0 +1,32 @@
+---
+description: Always follow AGENTS.md — Yadah TV account hub non-negotiables
+alwaysApply: true
+---
+
+# Project rule
+
+This repo is the **Yadah TV / PHD Ministries central account hub** (SSO + profile + admin).
+
+**Always read and obey `AGENTS.md` at the repo root before changing code.** It is the full playbook (stack, routes, auth, API, UI, env names).
+
+## Non-negotiables
+
+- **Bun only** — never npm / yarn / pnpm
+- **Port 3001** for local/prod scripts (not 3000)
+- **Do not invent API endpoints** — use only contracts already in the codebase unless the user supplies new ones
+- **Do not weaken auth** — keep `proxy.ts`, iron-session actions, axios interceptor refresh, and `/sso/authorize` intact unless the task is explicitly a security change
+- **Match existing patterns** — HeroUI v3, Formik+Yup inputs, Zustand+immer stores, TanStack Query, `@/` imports, ambient `src/types/i-*.ts`
+- **Never commit or paste secrets** from `.env` / `.env.local`
+
+## Quick pointers
+
+| Need | Where |
+|------|--------|
+| Route guards / roles | `src/proxy.ts` |
+| Session CRUD | `src/actions/session-action.ts` |
+| Authenticated HTTP | `useAxios().interceptor` |
+| Guest HTTP | `useAxios().axios` |
+| Public redirects | `createAppUrl` / `getPublicOrigin` in `src/lib/request-url.ts` |
+| Nav roles | `src/components/navigation/menu-items.tsx` |
+
+When `AGENTS.md` and this rule conflict with a direct user instruction, follow the user instruction for that turn — then keep changes consistent with the playbook otherwise.

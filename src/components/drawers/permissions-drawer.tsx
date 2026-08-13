@@ -14,8 +14,14 @@ interface Props {
 export const PermissionsDrawer: React.FC<Props> = (props) => {
   const [selected, setSelected] = useState<string[]>(props.permissions);
 
-  const handleTogglePermission = (permission: string) => {
-    setSelected((prev) => (prev.includes(permission) ? prev.filter((p) => p !== permission) : [...prev, permission]));
+  const handleTogglePermission = (permission: string, categoryPermissions: ISelectOption[], exclusive?: boolean) => {
+    setSelected((prev) => {
+      if (prev.includes(permission)) return prev.filter((p) => p !== permission);
+
+      const categoryValues = new Set(categoryPermissions.map((p) => p.value));
+      const withoutCategory = exclusive ? prev.filter((p) => !categoryValues.has(p)) : prev;
+      return [...withoutCategory, permission];
+    });
   };
 
   const handleSave = () => {
@@ -57,8 +63,8 @@ export const PermissionsDrawer: React.FC<Props> = (props) => {
                 </Button>
               </div>
               <Accordion className="w-full max-w-md" variant="surface">
-                {permissions.map(({ category, permissions }) => {
-                  const activeCount = permissions.filter((p) => selected.includes(p.value)).length;
+                {permissions.map(({ category, permissions: categoryPermissions, exclusive }) => {
+                  const activeCount = categoryPermissions.filter((p) => selected.includes(p.value)).length;
                   return (
                     <Accordion.Item key={category}>
                       <Accordion.Heading>
@@ -76,17 +82,17 @@ export const PermissionsDrawer: React.FC<Props> = (props) => {
                       </Accordion.Heading>
                       <Accordion.Panel>
                         <Accordion.Body className="flex flex-col gap-3">
-                          {permissions.length === 0 ? (
+                          {categoryPermissions.length === 0 ? (
                             <p className="text-muted py-1 text-xs italic">No permissions configured.</p>
                           ) : (
-                            permissions.map(({ label, value }) => {
+                            categoryPermissions.map(({ label, value }) => {
                               const isChecked = selected.includes(value);
                               return (
                                 <Checkbox
                                   id={value}
                                   key={value}
                                   isSelected={isChecked}
-                                  onChange={() => handleTogglePermission(value)}
+                                  onChange={() => handleTogglePermission(value, categoryPermissions, exclusive)}
                                 >
                                   <Checkbox.Content className="cursor-pointer text-xs select-none">
                                     <Checkbox.Control className="bg-muted/30">
