@@ -32,7 +32,7 @@ export default function SignIn() {
   const header = (
     <header>
       <h1 className="text-foreground font-heading text-2xl leading-snug font-semibold tracking-tight">Welcome back</h1>
-      <Description>Enter your email address or phone number to receive a secure one-time code.</Description>
+      <Description>Enter your email address or WhatsApp number to receive a secure one-time code.</Description>
     </header>
   );
   const footer = (
