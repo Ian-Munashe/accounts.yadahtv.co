@@ -1,5 +1,7 @@
 interface Categories {
   category: string;
+  /** When true, at most one permission from this category may be selected. */
+  exclusive?: boolean;
   permissions: ISelectOption[];
 }
 
@@ -9,6 +11,15 @@ export const permissions: Categories[] = [
     permissions: [
       { label: "Access Account", value: "login" },
       { label: "Users Management", value: "users" },
+    ],
+  },
+  {
+    category: "The View",
+    exclusive: true,
+    permissions: [
+      { label: "The View Admin", value: "theview:admin" },
+      { label: "Satellite Leader", value: "theview:satellite" },
+      { label: "Cell Group Leader", value: "theview:cell-group" },
     ],
   },
   {
