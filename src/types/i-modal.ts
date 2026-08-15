@@ -4,5 +4,5 @@ interface IModal {
   showCancel?: boolean;
   confirmText?: string;
   status?: "default" | "info" | "success" | "warning" | "danger";
-  onConfirm?: () => void;
+  onConfirm?: () => void | Promise<void>;
 }

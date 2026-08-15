@@ -2,7 +2,8 @@ import { toast } from "@heroui/react";
 
 import { useAxios } from "./axios-hook";
 import { useGlobalState, useModalState, useUserState } from "@/stores";
-import { deleteSession, updateSession } from "@/actions/session-action";
+import { deleteSession, getSession, updateSession } from "@/actions/session-action";
+import { resumeAfterLogout } from "@/lib/sso-return";
 
 export const useAuthentication = () => {
   const { interceptor } = useAxios();
@@ -18,9 +19,15 @@ export const useAuthentication = () => {
       onConfirm: async () => {
         setIsProgress(true);
         try {
-          await interceptor.get("/user/signout");
+          const session = await getSession();
+          const ssoReturnTo = session.ssoReturnTo;
+          try {
+            await interceptor.get("/user/signout");
+          } catch {
+            // Local logout and origin redirect still proceed if the API call fails.
+          }
           await deleteSession();
-          window.location.href = "/signin";
+          resumeAfterLogout(ssoReturnTo);
         } catch (error: any) {
           toast.danger(error.response?.data?.message || error.message);
         } finally {

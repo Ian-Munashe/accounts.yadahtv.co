@@ -1,6 +1,24 @@
 # AGENTS.md — Yadah TV Account Center
 
-Mandatory guidance for AI agents and contributors working in this repository.
+**Follow this file on every turn.** It is mandatory for AI agents and contributors working in this repository. Read it before exploring, changing, or reviewing code. Do not skip it because the task looks small.
+
+## Cursor rules (required)
+
+Cursor project rules live in [`.cursor/rules/`](.cursor/rules/). They are part of this playbook, not optional extras. **Read and obey every `.mdc` file in that folder** in addition to this document.
+
+| File | Scope |
+|------|--------|
+| [`.cursor/rules/project.mdc`](.cursor/rules/project.mdc) | Always on (`alwaysApply: true`). Short non-negotiables and file pointers. Canonical detail stays here. |
+
+If you add, rename, or remove a Cursor rule, update this table in the same change. Keep rules concise; put full guidance in this file.
+
+### Precedence
+
+1. Explicit user instruction for the current turn
+2. This file (`AGENTS.md`)
+3. Cursor rules in `.cursor/rules/`
+
+If a Cursor rule and this file disagree, follow this file, then update the rule so they match. After a one-turn user override, keep later changes consistent with this playbook.
 
 ## Mission
 
@@ -20,7 +38,7 @@ Do not turn this into an unrelated product. Prefer extending existing account/SS
 3. **Do not weaken auth** — keep iron-session, `proxy.ts` guards, token refresh, and SSO ticket flow intact unless the task is a deliberate security change.
 4. **Never commit secrets** — no `.env`, `.env.local`, credentials, or private keys. Reference env **names** only.
 5. **Match existing patterns** — copy local conventions (hooks, stores, Formik inputs, HeroUI usage, barrel exports) before introducing new libraries or architectures.
-6. **Port is 3001** — `dev`, `start`, and Docker expose **3001** (README may still say 3000; trust `package.json` / Dockerfile).
+6. **Port is 3001** — `dev`, `start`, and Docker expose **3001**. Trust `package.json` / Dockerfile over older docs.
 
 ## Tech stack
 
@@ -79,7 +97,7 @@ Route protection lives in **`src/proxy.ts`** (matcher excludes `api`, `_next/sta
 
 | Kind | Paths | Rules |
 |------|-------|--------|
-| Guest | `/signin`, `/join` | Redirect to `/` if already authenticated |
+| Guest | `/signin`, `/join` | If already authenticated: resume SSO when `returnTo` or session `ssoReturnTo` is set, otherwise `/` |
 | Protected | `/`, `/profile`, `/devices`, `/users`, `/applications` | Require session (`accessToken` + `refreshToken` + `user`) |
 | Admin | `/users` | `superadmin` or `admin` |
 | Superadmin | `/applications` | `superadmin` only |
@@ -97,13 +115,13 @@ Redirects must use **`createAppUrl` / `getPublicOrigin`** from `src/lib/request-
 
 ## Session & auth model
 
-- Session shape (`ISession`): optional `user`, `accessToken`, `refreshToken`.
+- Session shape (`ISession`): optional `user`, `accessToken`, `refreshToken`, `ssoReturnTo`.
 - Cookie config: `src/session-options.ts` — `NEXT_AUTH_SECRET`, `NEXT_COOKIE_NAME`; `secure` in production; long-lived cookie via `Utils`.
 - Server actions: `src/actions/session-action.ts` — `getSession`, `updateSession`, `deleteSession` (always serialize with `JSON.parse(JSON.stringify(...))` after iron-session ops).
 - Client bootstrap: `Providers` loads device info + session, then hydrates `useUserState`.
 - Sign-in / join: OTP + identifier flows (email or phone) via forms under `components/forms`.
 - Sign-out / destructive confirms: `useModalState().showModal` + `toast` for errors.
-- **SSO**: `GET /sso/authorize` issues a backend ticket and redirects to the client app with `?ticket=...`. Requires `redirect`, `deviceId`, `clientId`. On 401, refresh tokens then retry; otherwise send user to `/signin` with `returnTo`.
+- **SSO**: `GET /sso/authorize` issues a backend ticket and redirects to the client app with `?ticket=...`. Requires `redirect`, `deviceId`, `clientId`. On 401, refresh tokens then retry; otherwise send user to `/signin` with `returnTo` and persist `ssoReturnTo` on the session. Sign-in and join must keep `returnTo` on Create Account / Sign In / Use a different contact links (`src/lib/sso-return.ts`). After sign-in or account creation, call `resumeAfterAuth` (do not wrap a path that is already `/sso/authorize`). After logout, call `resumeAfterLogout` using `ssoReturnTo` captured before `deleteSession` — that must open the origin app callback (for example `theviewyadahtvco://sso/callback`), not bounce back to Account Center sign-in.
 
 Authenticated = presence of access token, refresh token, **and** user. Do not treat a half-filled session as logged in.
 
@@ -199,7 +217,8 @@ Before finishing a task:
 3. If session/user data changed → keep session cookie and Zustand user in sync.
 4. If calling API → use `useAxios` correctly (`axios` vs `interceptor`) and handle toast errors.
 5. If UI → HeroUI + existing inputs/cards; match spacing/typography of neighboring pages.
-6. Do not touch `.env.local` contents in commits or paste secrets into docs.
+6. If Cursor rules changed → keep the table in this file in sync with `.cursor/rules/`.
+7. Do not touch `.env.local` contents in commits or paste secrets into docs.
 
 ## Out of scope unless explicitly requested
 

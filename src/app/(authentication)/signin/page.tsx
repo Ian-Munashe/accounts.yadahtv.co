@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Description, Separator, toast } from "@heroui/react";
@@ -11,6 +11,7 @@ import { StepPill } from "@/components/step-pill";
 import { stepFadeAnimation } from "@/lib/animations";
 import { updateSession } from "@/actions/session-action";
 import { OTPForm, RequestCodeForm } from "@/components/forms";
+import { authPathWithReturnTo, resumeAfterAuth } from "@/lib/sso-return";
 
 enum Steps {
   VERIFY = "verify",
@@ -21,24 +22,29 @@ enum Steps {
 export default function SignIn() {
   const action = "sign-in";
   const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const { axios } = useAxios();
   const { getUser } = useAuthentication();
 
   const [identifier, setIdentifier] = useState<string>("");
   const [step, setStep] = useState<Steps>(Steps.CONTACT);
 
+  useEffect(() => {
+    if (returnTo) updateSession({ ssoReturnTo: returnTo });
+  }, [returnTo]);
+
   const steps: Steps[] = [Steps.CONTACT, Steps.VERIFY];
   const stepIndex = steps.findIndex((i) => i === step);
   const header = (
     <header>
       <h1 className="text-foreground font-heading text-2xl leading-snug font-semibold tracking-tight">Welcome back</h1>
-      <Description>Enter your email address or phone number to receive a secure one-time code.</Description>
+      <Description>Enter your email address or WhatsApp number to receive a secure one-time code.</Description>
     </header>
   );
   const footer = (
     <Description className="flex flex-wrap items-center gap-1">
       Don&apos;t have an account?&nbsp;
-      <a href="/join" className="text-accent font-medium">
+      <a href={authPathWithReturnTo("/join", returnTo)} className="text-accent font-medium">
         Create Account
       </a>
     </Description>
@@ -50,12 +56,7 @@ export default function SignIn() {
       const { accessToken, refreshToken } = response.data;
       await updateSession({ accessToken, refreshToken });
       const isSuccess = await getUser();
-      if (isSuccess) {
-        const returnTo = searchParams.get("returnTo");
-        returnTo
-          ? (window.location.href = `/sso/authorize?redirect=${encodeURIComponent(returnTo)}`)
-          : (window.location.href = "/");
-      }
+      if (isSuccess) resumeAfterAuth(returnTo);
     } catch (error: any) {
       toast.danger(error?.response?.data?.message ?? error.message);
     }

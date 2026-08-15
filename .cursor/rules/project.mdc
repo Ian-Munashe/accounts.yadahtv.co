@@ -7,7 +7,7 @@ alwaysApply: true
 
 This repo is the **Yadah TV / PHD Ministries central account hub** (SSO + profile + admin).
 
-**Always read and obey `AGENTS.md` at the repo root before changing code.** It is the full playbook (stack, routes, auth, API, UI, env names).
+**Always read and obey [`AGENTS.md`](../../AGENTS.md) at the repo root before changing code.** That file is the full playbook. It also lists every Cursor rule that must be followed.
 
 ## Non-negotiables
 

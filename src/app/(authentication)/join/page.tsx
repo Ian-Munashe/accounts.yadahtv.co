@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Description, Separator } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { StepPill } from "@/components/step-pill";
 import { stepFadeAnimation } from "@/lib/animations";
+import { updateSession } from "@/actions/session-action";
+import { authPathWithReturnTo } from "@/lib/sso-return";
 import { AccountRegistrationForm, OTPForm, RequestCodeForm } from "@/components/forms";
 
 enum Steps {
@@ -16,10 +19,16 @@ enum Steps {
 
 export default function SignIn() {
   const action = "sign-up";
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
 
   const [token, setToken] = useState<string>("");
   const [identifier, setIdentifier] = useState<string>("");
   const [step, setStep] = useState<Steps>(Steps.CONTACT);
+
+  useEffect(() => {
+    if (returnTo) updateSession({ ssoReturnTo: returnTo });
+  }, [returnTo]);
 
   const steps: Steps[] = [Steps.CONTACT, Steps.VERIFY, Steps.COMPLETE];
   const stepIndex = steps.findIndex((i) => i === step);
@@ -36,7 +45,7 @@ export default function SignIn() {
   const footer = (
     <Description className="flex flex-wrap items-center gap-1">
       Already have an account?
-      <a href="/signin" className="text-accent font-medium">
+      <a href={authPathWithReturnTo("/signin", returnTo)} className="text-accent font-medium">
         Sign In
       </a>
     </Description>
@@ -65,7 +74,7 @@ export default function SignIn() {
         return (
           identifier && (
             <motion.div key={Steps.COMPLETE} className={className} {...stepFadeAnimation}>
-              <AccountRegistrationForm token={token} />
+              <AccountRegistrationForm token={token} returnTo={returnTo} />
             </motion.div>
           )
         );

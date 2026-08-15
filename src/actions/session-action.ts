@@ -10,13 +10,14 @@ export const getSession = async (): Promise<ISession> => {
   return JSON.parse(JSON.stringify(session));
 };
 
-export const updateSession = async ({ accessToken, refreshToken, user }: ISession): Promise<ISession> => {
+export const updateSession = async ({ accessToken, refreshToken, user, ssoReturnTo }: ISession): Promise<ISession> => {
   const cookieStore = await cookies();
   const session: IronSession<ISession> = await getIronSession<ISession>(cookieStore, sessionOptions);
 
   if (user) session.user = user;
   if (accessToken) session.accessToken = accessToken;
   if (refreshToken) session.refreshToken = refreshToken;
+  if (ssoReturnTo) session.ssoReturnTo = ssoReturnTo;
 
   await session.save();
   return JSON.parse(JSON.stringify(session));
