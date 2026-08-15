@@ -22,8 +22,12 @@ describe("authPathWithReturnTo", () => {
 });
 
 describe("ssoResumePath", () => {
-  test("matches the existing sign-in resume URL shape", () => {
-    expect(ssoResumePath(returnTo)).toBe(`/sso/authorize?redirect=${encodeURIComponent(returnTo)}`);
+  test("does not wrap a path that is already /sso/authorize", () => {
+    expect(ssoResumePath(returnTo)).toBe(returnTo);
+  });
+
+  test("wraps a raw origin callback as redirect", () => {
+    expect(ssoResumePath("https://app.example/cb")).toBe(`/sso/authorize?redirect=${encodeURIComponent("https://app.example/cb")}`);
   });
 });
 
@@ -52,8 +56,20 @@ describe("destinationAfterAuth", () => {
 });
 
 describe("destinationAfterLogout", () => {
-  test("resumes SSO when returnTo is set", () => {
-    expect(destinationAfterLogout(returnTo)).toBe(ssoResumePath(returnTo));
+  const viewReturnTo =
+    "/sso/authorize?deviceId=SM-M326B-977d93d4b817243e&clientId=theview&redirect=theviewyadahtvco%3A%2F%2Fsso%2Fcallback";
+
+  test("sends the user to the origin app callback", () => {
+    expect(destinationAfterLogout(viewReturnTo)).toBe("theviewyadahtvco://sso/callback");
+  });
+
+  test("unwraps a double-wrapped authorize returnTo", () => {
+    const nested = `/sso/authorize?redirect=${encodeURIComponent(viewReturnTo)}`;
+    expect(destinationAfterLogout(nested)).toBe("theviewyadahtvco://sso/callback");
+  });
+
+  test("uses an https origin callback", () => {
+    expect(destinationAfterLogout(returnTo)).toBe("https://app.example/cb");
   });
 
   test("goes to sign-in when returnTo is missing", () => {

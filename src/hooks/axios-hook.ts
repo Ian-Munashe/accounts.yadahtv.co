@@ -6,6 +6,9 @@ import { deleteSession, getSession, updateSession } from "@/actions/session-acti
 
 let isRefreshingToken: Promise<any> | null = null;
 
+const isSignoutRequest = (config?: InternalAxiosRequestConfig) =>
+  typeof config?.url === "string" && config.url.includes("/user/signout");
+
 export const useAxios = () => {
   const deviceInfo = useDeviceInfoState();
   const { model, platform, deviceId, clientId, operatingSystem } = deviceInfo;
@@ -90,11 +93,12 @@ export const useAxios = () => {
         const status = error?.response?.status;
 
         if (status === 403) {
-          window.location.href = "/";
+          if (!isSignoutRequest(prevRequest)) window.location.href = "/";
           return Promise.reject(error);
         }
 
         if (status === 401 && prevRequest && !prevRequest._retry) {
+          if (isSignoutRequest(prevRequest)) return Promise.reject(error);
           prevRequest._retry = true;
           try {
             return await refreshSessionToken(prevRequest);

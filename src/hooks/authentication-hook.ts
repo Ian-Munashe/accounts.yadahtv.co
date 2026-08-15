@@ -21,7 +21,11 @@ export const useAuthentication = () => {
         try {
           const session = await getSession();
           const ssoReturnTo = session.ssoReturnTo;
-          await interceptor.get("/user/signout");
+          try {
+            await interceptor.get("/user/signout");
+          } catch {
+            // Local logout and origin redirect still proceed if the API call fails.
+          }
           await deleteSession();
           resumeAfterLogout(ssoReturnTo);
         } catch (error: any) {

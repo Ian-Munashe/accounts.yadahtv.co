@@ -69,7 +69,12 @@ export const AlertModal: React.FC = () => {
                 Cancel
               </Button>
             )}
-            <Button slot="close" onPress={onConfirm}>
+            <Button
+              onPress={async () => {
+                await onConfirm?.();
+                closeModal();
+              }}
+            >
               {confirmText}
             </Button>
           </Modal.Footer>

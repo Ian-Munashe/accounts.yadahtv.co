@@ -121,7 +121,7 @@ Redirects must use **`createAppUrl` / `getPublicOrigin`** from `src/lib/request-
 - Client bootstrap: `Providers` loads device info + session, then hydrates `useUserState`.
 - Sign-in / join: OTP + identifier flows (email or phone) via forms under `components/forms`.
 - Sign-out / destructive confirms: `useModalState().showModal` + `toast` for errors.
-- **SSO**: `GET /sso/authorize` issues a backend ticket and redirects to the client app with `?ticket=...`. Requires `redirect`, `deviceId`, `clientId`. On 401, refresh tokens then retry; otherwise send user to `/signin` with `returnTo` and persist `ssoReturnTo` on the session. Sign-in and join must keep `returnTo` on Create Account / Sign In / Use a different contact links (`src/lib/sso-return.ts`). After sign-in or account creation, call `resumeAfterAuth`. After logout, call `resumeAfterLogout` using `ssoReturnTo` captured before `deleteSession`.
+- **SSO**: `GET /sso/authorize` issues a backend ticket and redirects to the client app with `?ticket=...`. Requires `redirect`, `deviceId`, `clientId`. On 401, refresh tokens then retry; otherwise send user to `/signin` with `returnTo` and persist `ssoReturnTo` on the session. Sign-in and join must keep `returnTo` on Create Account / Sign In / Use a different contact links (`src/lib/sso-return.ts`). After sign-in or account creation, call `resumeAfterAuth` (do not wrap a path that is already `/sso/authorize`). After logout, call `resumeAfterLogout` using `ssoReturnTo` captured before `deleteSession` — that must open the origin app callback (for example `theviewyadahtvco://sso/callback`), not bounce back to Account Center sign-in.
 
 Authenticated = presence of access token, refresh token, **and** user. Do not treat a half-filled session as logged in.
 
