@@ -85,7 +85,8 @@ const refreshToken = async ({ request, redirect, deviceId, clientId }: RefreshTo
   }
 };
 
-const redirectToSignin = (request: NextRequest) => {
+const redirectToSignin = async (request: NextRequest) => {
+  await updateSession({ ssoReturnTo: request.nextUrl.pathname + request.nextUrl.search });
   const loginUrl = createAppUrl(request, "/signin");
   loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);

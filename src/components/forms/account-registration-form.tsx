@@ -9,11 +9,13 @@ import { useAxios } from "@/hooks/axios-hook";
 import { useAuthentication } from "@/hooks";
 import { genderOptions } from "@/gender-options";
 import { RegisterValidationSchema } from "@/validations";
-import { updateSession } from "@/actions/session-action";
+import { getSession, updateSession } from "@/actions/session-action";
+import { authPathWithReturnTo, resumeAfterAuth, ssoResumeTarget } from "@/lib/sso-return";
 import { AutocompleteInput, SelectInput, TextField } from "../inputs";
 
 interface Props {
   token: string;
+  returnTo?: string | null;
 }
 
 export const AccountRegistrationForm: React.FC<Props> = (props) => {
@@ -31,7 +33,10 @@ export const AccountRegistrationForm: React.FC<Props> = (props) => {
         const { accessToken, refreshToken } = response.data;
         await updateSession({ accessToken, refreshToken });
         const isSuccess = await getUser();
-        if (isSuccess) window.location.href = "/";
+        if (isSuccess) {
+          const session = await getSession();
+          resumeAfterAuth(ssoResumeTarget(props.returnTo, session.ssoReturnTo));
+        }
       } catch (error: any) {
         toast.danger(error.response?.data?.message || error.message);
       }
@@ -81,7 +86,7 @@ export const AccountRegistrationForm: React.FC<Props> = (props) => {
         <div className="flex flex-col items-center space-y-4">
           <Separator />
           <Description className="flex flex-wrap items-center gap-1">
-            <Link href="/join" className="text-muted font-medium">
+            <Link href={authPathWithReturnTo("/join", props.returnTo)} className="text-muted font-medium">
               <LuArrowLeft size={16} />
               Use a different contact
             </Link>
