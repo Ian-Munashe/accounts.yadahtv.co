@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { getSession } from "./actions/session-action";
 import { createAppUrl } from "@/lib/request-url";
+import { ssoResumePath, ssoResumeTarget } from "@/lib/sso-return";
 
 const guestRoutes = ["/signin", "/join"];
 const superadminRoutes = ["/applications"];
@@ -17,7 +18,11 @@ export async function proxy(request: NextRequest) {
 
   const isGuestRoute = guestRoutes.some((route) => pathname.startsWith(route));
   if (isGuestRoute) {
-    if (isAuthenticated) return NextResponse.redirect(createAppUrl(request, "/"));
+    if (isAuthenticated) {
+      const resumeTo = ssoResumeTarget(request.nextUrl.searchParams.get("returnTo"), session.ssoReturnTo);
+      if (resumeTo) return NextResponse.redirect(createAppUrl(request, ssoResumePath(resumeTo)));
+      return NextResponse.redirect(createAppUrl(request, "/"));
+    }
     return NextResponse.next();
   }
 
