@@ -20,6 +20,19 @@ Users should not need a separate account for every PHD Ministries application. T
 - Admin user management (`admin` / `superadmin`)
 - Application registration (`superadmin` only)
 
+## SSO
+
+Client apps send users here with `GET /sso/authorize?redirect=...&deviceId=...&clientId=...`. If there is no session, they land on `/signin?returnTo=...`. The return target is also stored on the session as `ssoReturnTo`.
+
+| After | With SSO context | Without SSO context |
+|-------|------------------|---------------------|
+| Sign in or create account | Resume `/sso/authorize` and return the origin app with `?ticket=` | `/` (Account Center home) |
+| Log out | Open the origin app callback (custom scheme or https), not Account Center sign-in | `/signin` |
+
+Create Account, Sign In, and Use a different contact keep `returnTo` on the URL. Path helpers live in `src/lib/sso-return.ts`.
+
+Authenticated means access token, refresh token, **and** user are all present. `ssoReturnTo` alone is not a login. Route gates are in `src/proxy.ts`.
+
 ## Tech stack
 
 | Area | Choice |
@@ -70,6 +83,7 @@ bun run dev      # Next.js dev server on port 3001
 bun run build    # next build --webpack
 bun run start    # standalone server on port 3001
 bun run lint
+bun test         # Bun test runner (src/lib/sso-return.test.ts)
 ```
 
 Production Docker image: multi-stage `Dockerfile` (Bun install/build, Node 20 Alpine runner, port **3001**).
@@ -99,7 +113,7 @@ Set these in `.env.local` or the host environment. Never commit values.
 │   ├── actions/                   # Server actions (session)
 │   ├── components/                # cards, drawers, forms, inputs, modals, navigation
 │   ├── hooks/                     # axios, auth, devices, pagination
-│   ├── lib/                       # utils, public URL helpers, animations, mask
+│   ├── lib/                       # utils, SSO return helpers, public URLs, animations
 │   ├── stores/                    # Zustand stores
 │   ├── types/                     # Ambient interfaces (i-*.ts)
 │   ├── validations/               # Yup schemas
@@ -111,8 +125,6 @@ Set these in `.env.local` or the host environment. Never commit values.
 ├── package.json
 └── README.md
 ```
-
-Route protection lives in `src/proxy.ts`. Authenticated means access token, refresh token, **and** user are all present.
 
 ## Notes
 
