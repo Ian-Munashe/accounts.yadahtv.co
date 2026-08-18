@@ -22,12 +22,18 @@ Users should not need a separate account for every PHD Ministries application. T
 
 ## SSO
 
-Client apps send users here with `GET /sso/authorize?redirect=...&deviceId=...&clientId=...`. If there is no session, they land on `/signin?returnTo=...`. The return target is also stored on the session as `ssoReturnTo`.
+Client apps (`yb`, `theview`) use **this app only** to start SSO:
 
-| After | With SSO context | Without SSO context |
-|-------|------------------|---------------------|
-| Sign in or create account | Resume `/sso/authorize` and return the origin app with `?ticket=` | `/` (Account Center home) |
-| Log out | Open the origin app callback (custom scheme or https), not Account Center sign-in | `/signin` |
+1. `GET /sso/authorize?redirect=...&deviceId=...&clientId=yb|theview`
+2. After sign-in if needed, Accounts returns `{redirect}?t=` (ticket TTL **60s — never save it**)
+3. The client exchanges on Auth API `GET /sso/exchange?t=` and stores `accessToken` / `refreshToken`
+
+Hand the client AI [`DOC_SSO.md`](./DOC_SSO.md), then Auth API `DOC_SSO.md` for exchange.
+
+| After | SSO authorize in progress | Direct Accounts visit |
+|-------|---------------------------|------------------------|
+| Sign in or create account | Resume `/sso/authorize` → origin `?t=` | `/` |
+| Log out | Origin callback with no `t` | `/signin` |
 
 Create Account, Sign In, and Use a different contact keep `returnTo` on the URL. Path helpers live in `src/lib/sso-return.ts`.
 
@@ -83,7 +89,7 @@ bun run dev      # Next.js dev server on port 3001
 bun run build    # next build --webpack
 bun run start    # standalone server on port 3001
 bun run lint
-bun test         # Bun test runner (src/lib/sso-return.test.ts)
+bun test         # Bun test runner (`tests/`)
 ```
 
 Production Docker image: multi-stage `Dockerfile` (Bun install/build, Node 20 Alpine runner, port **3001**).
@@ -120,6 +126,8 @@ Set these in `.env.local` or the host environment. Never commit values.
 │   ├── proxy.ts                   # Route auth / role gates
 │   ├── session-options.ts         # iron-session cookie config
 │   └── permissions.ts             # Cross-app permission catalog
+├── tests/                         # Bun tests (do not colocate `*.test.ts` under src/)
+├── DOC_SSO.md                     # Client SSO authorize (60s ticket → Auth exchange)
 ├── AGENTS.md                      # Mandatory agent / contributor playbook
 ├── Dockerfile
 ├── package.json

@@ -65,6 +65,7 @@ bun run dev      # http://localhost:3001
 bun run build    # next build --webpack
 bun run start    # standalone server on 3001
 bun run lint
+bun test         # tests/ only
 ```
 
 Production image: multi-stage `Dockerfile` (Bun deps/build → Node 20 Alpine runner).
@@ -72,6 +73,8 @@ Production image: multi-stage `Dockerfile` (Bun deps/build → Node 20 Alpine ru
 ## Repository map
 
 ```text
+DOC_SSO.md                # Client SSO authorize; 60s ticket, never stored; exchange is Auth API DOC_SSO.md
+tests/                    # Bun tests only — never colocate `*.test.ts` under src/
 src/
   app/                    # App Router
     (authentication)/     # guest: /signin, /join, /sso/authorize
@@ -121,7 +124,7 @@ Redirects must use **`createAppUrl` / `getPublicOrigin`** from `src/lib/request-
 - Client bootstrap: `Providers` loads device info + session, then hydrates `useUserState`.
 - Sign-in / join: OTP + identifier flows (email or phone) via forms under `components/forms`.
 - Sign-out / destructive confirms: `useModalState().showModal` + `toast` for errors.
-- **SSO**: `GET /sso/authorize` issues a backend ticket and redirects to the client app with `?ticket=...`. Requires `redirect`, `deviceId`, `clientId`. On 401, refresh tokens then retry; otherwise send user to `/signin` with `returnTo` and persist `ssoReturnTo` on the session. Sign-in and join must keep `returnTo` on Create Account / Sign In / Use a different contact links (`src/lib/sso-return.ts`). After sign-in or account creation, call `resumeAfterAuth` (do not wrap a path that is already `/sso/authorize`). After logout, call `resumeAfterLogout` using `ssoReturnTo` captured before `deleteSession` — that must open the origin app callback (for example `theviewyadahtvco://sso/callback`), not bounce back to Account Center sign-in.
+- **SSO**: Client apps use this UI only for authorize: `GET /sso/authorize?redirect&deviceId&clientId` (`yb` / `theview`). After session, Accounts `POST /sso/ticket` and returns `{redirect}?t=`. Ticket TTL is 60s and must never be stored; the client exchanges it on Auth `GET /sso/exchange?t=` for `accessToken` / `refreshToken`. Client docs: [`DOC_SSO.md`](./DOC_SSO.md). Exchange docs: Auth API `DOC_SSO.md`. Prefer query `deviceId` for the ticket, else the session JWT `deviceId`. http(s) callbacks 302; custom schemes HTML handoff. Helpers: `src/lib/sso-authorize.ts`. On 401 refresh then retry; else `/signin?returnTo=...` + `ssoReturnTo`. Sign-in/join keep `returnTo` (`src/lib/sso-return.ts`). After auth, `resumeAfterAuth`. After logout, `resumeAfterLogout` (origin callback with no `t`).
 
 Authenticated = presence of access token, refresh token, **and** user. Do not treat a half-filled session as logged in.
 
@@ -207,6 +210,8 @@ Never print or commit values from `.env.local`.
 - Avoid adding dependencies when an existing package already covers the need.
 - Do not add `useMemo` / `useCallback` by default; React Compiler is on. Follow existing local usage.
 - Keep comments rare and useful; do not leave debug `console.log` or commented-out redirect hacks.
+- Tests live in `tests/` at the repo root (`bun test tests`). Do not add `*.test.ts` under `src/`.
+- Client-facing integration docs are `DOC_*.md` at the repo root (e.g. `DOC_SSO.md`).
 
 ## Change checklist
 

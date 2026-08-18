@@ -35,7 +35,7 @@ export const AccountRegistrationForm: React.FC<Props> = (props) => {
         const isSuccess = await getUser();
         if (isSuccess) {
           const session = await getSession();
-          resumeAfterAuth(ssoResumeTarget(props.returnTo, session.ssoReturnTo));
+          await resumeAfterAuth(ssoResumeTarget(props.returnTo, session.ssoReturnTo));
         }
       } catch (error: any) {
         toast.danger(error.response?.data?.message || error.message);

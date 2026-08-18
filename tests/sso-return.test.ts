@@ -4,9 +4,10 @@ import {
   authPathWithReturnTo,
   destinationAfterAuth,
   destinationAfterLogout,
+  shouldRedirectAuthenticatedGuest,
   ssoResumePath,
   ssoResumeTarget,
-} from "./sso-return";
+} from "@/lib/sso-return";
 
 const returnTo = "/sso/authorize?redirect=https://app.example/cb&deviceId=d1&clientId=c1";
 
@@ -74,5 +75,20 @@ describe("destinationAfterLogout", () => {
 
   test("goes to sign-in when returnTo is missing", () => {
     expect(destinationAfterLogout(undefined)).toBe("/signin");
+  });
+});
+
+describe("shouldRedirectAuthenticatedGuest", () => {
+  test("redirects a GET so a signed-in user does not stay on /signin", () => {
+    expect(shouldRedirectAuthenticatedGuest("GET")).toBe(true);
+  });
+
+  test("does not redirect POST so session server actions are not sent to authorize HTML", () => {
+    expect(shouldRedirectAuthenticatedGuest("POST")).toBe(false);
+  });
+
+  test("does not redirect an RSC refresh so authorize HTML is not parsed as a Next payload", () => {
+    const headers = { get: (name: string) => (name.toLowerCase() === "rsc" ? "1" : null) };
+    expect(shouldRedirectAuthenticatedGuest("GET", headers)).toBe(false);
   });
 });
