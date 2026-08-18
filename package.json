@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "start": "node .next/standalone/server.js -p 3001",
     "lint": "eslint",
-    "test": "bun test"
+    "test": "bun test tests"
   },
   "dependencies": {
     "@capacitor/core": "^8.4.1",

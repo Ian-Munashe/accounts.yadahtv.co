@@ -9,9 +9,9 @@ import { useAxios } from "@/hooks/axios-hook";
 import { useAuthentication } from "@/hooks";
 import { StepPill } from "@/components/step-pill";
 import { stepFadeAnimation } from "@/lib/animations";
-import { updateSession } from "@/actions/session-action";
 import { OTPForm, RequestCodeForm } from "@/components/forms";
-import { authPathWithReturnTo, resumeAfterAuth } from "@/lib/sso-return";
+import { getSession, updateSession } from "@/actions/session-action";
+import { authPathWithReturnTo, resumeAfterAuth, ssoResumeTarget } from "@/lib/sso-return";
 
 enum Steps {
   VERIFY = "verify",
@@ -56,7 +56,10 @@ export default function SignIn() {
       const { accessToken, refreshToken } = response.data;
       await updateSession({ accessToken, refreshToken });
       const isSuccess = await getUser();
-      if (isSuccess) resumeAfterAuth(returnTo);
+      if (isSuccess) {
+        const session = await getSession();
+        await resumeAfterAuth(ssoResumeTarget(returnTo, session.ssoReturnTo));
+      }
     } catch (error: any) {
       toast.danger(error?.response?.data?.message ?? error.message);
     }

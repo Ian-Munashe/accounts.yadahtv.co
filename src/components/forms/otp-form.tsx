@@ -29,7 +29,7 @@ interface Props {
   showFooter?: boolean;
   isModalContext?: boolean;
   onBack?: () => void;
-  onSuccess: (token: string) => void;
+  onSuccess: (token: string) => void | Promise<void>;
 }
 
 export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = false, ...props }) => {
@@ -50,10 +50,11 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
       setIsSubmitting(true);
       try {
         const response = await axios.post("/otp/verify", values);
-        props.onSuccess(response.data.token);
+        await props.onSuccess(response.data.token);
       } catch (error: any) {
-        setIsSubmitting(false);
         toast.danger(error?.response?.data?.message ?? error.message);
+      } finally {
+        setIsSubmitting(false);
       }
     },
   });
