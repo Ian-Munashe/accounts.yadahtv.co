@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { deleteSession, getSession, updateSession } from "@/actions/session-action";
 import {
   appendSsoTicket,
+  isAllowedSsoCallback,
   isSsoClientId,
   isWebCallback,
   parseSsoAuthorizeParams,
@@ -22,7 +23,7 @@ const authorize = async (request: NextRequest) => {
   const { redirect, deviceId, clientId } = parseSsoAuthorizeParams(searchParams, getPublicOrigin(request));
   const session = await getSession();
   const isAuthenticated = Boolean(session.accessToken && session.refreshToken && session.user);
-  const isAuthorizeRequest = Boolean(redirect && isSsoClientId(clientId));
+  const isAuthorizeRequest = Boolean(redirect && isSsoClientId(clientId) && isAllowedSsoCallback(redirect));
 
   if (!isAuthorizeRequest) {
     if (isAuthenticated) return NextResponse.redirect(createAppUrl(request, "/"));

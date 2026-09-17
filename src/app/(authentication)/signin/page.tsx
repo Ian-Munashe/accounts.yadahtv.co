@@ -30,7 +30,8 @@ export default function SignIn() {
   const [step, setStep] = useState<Steps>(Steps.CONTACT);
 
   useEffect(() => {
-    if (returnTo) updateSession({ ssoReturnTo: returnTo });
+    if (!returnTo) return;
+    void updateSession({ ssoReturnTo: returnTo }).catch(() => {});
   }, [returnTo]);
 
   const steps: Steps[] = [Steps.CONTACT, Steps.VERIFY];

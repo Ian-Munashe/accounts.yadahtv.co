@@ -1,5 +1,65 @@
 const FIRST_PARTY_HOP_CLIENTS = new Set(["yb", "theview"]);
 
+/**
+ * Callback origins (web) and schemes (native) that may receive an SSO ticket.
+ *
+ * A ticket is a 60s credential exchangeable for a full session, so redirect
+ * targets must be allowlisted. Configure with SSO_CALLBACK_ORIGINS (comma-separated
+ * https origins) and SSO_CALLBACK_SCHEMES (comma-separated native schemes).
+ */
+const DEFAULT_CALLBACK_SCHEMES = ["theviewyadahtvco"];
+
+const configuredCallbackOrigins = (): string[] =>
+  String(process.env.SSO_CALLBACK_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      try {
+        return new URL(origin).origin;
+      } catch {
+        return origin.replace(/\/+$/, "");
+      }
+    });
+
+const configuredCallbackSchemes = (): string[] => {
+  const configured = String(process.env.SSO_CALLBACK_SCHEMES ?? "")
+    .split(",")
+    .map((scheme) => scheme.trim().replace(/:$/, "").toLowerCase())
+    .filter(Boolean);
+  return configured.length > 0 ? configured : DEFAULT_CALLBACK_SCHEMES;
+};
+
+/** Dev-only escape hatch; never rely on this in production. */
+const allowAnyCallback = (): boolean => process.env.SSO_ALLOW_ANY_CALLBACK === "true";
+
+/**
+ * True when `redirect` is a callback this deployment is willing to hand a ticket to.
+ * Web callbacks must match an allowlisted origin; native callbacks must use an
+ * allowlisted custom scheme. Anything else (unknown origin, scheme, or unparseable
+ * value) is rejected rather than reflected.
+ */
+export const isAllowedSsoCallback = (redirect?: string | null): boolean => {
+  if (!redirect?.trim()) return false;
+  if (allowAnyCallback()) return true;
+
+  const value = redirect.trim();
+
+  try {
+    const url = new URL(value);
+
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      const allowed = configuredCallbackOrigins();
+      return allowed.includes(url.origin);
+    }
+
+    const scheme = url.protocol.replace(/:$/, "").toLowerCase();
+    return configuredCallbackSchemes().includes(scheme);
+  } catch {
+    return false;
+  }
+};
+
 const isAuthorizeValue = (value: string): boolean =>
   value.startsWith("/sso/authorize") || value.includes("/sso/authorize?");
 
