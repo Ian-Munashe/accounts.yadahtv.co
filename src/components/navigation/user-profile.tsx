@@ -39,7 +39,7 @@ export const UserProfile: React.FC = () => {
             className="max-w-17.5 overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap"
             title={user?.fullname}
           >
-            {user!.fullname?.length > 12 ? `${user?.fullname.slice(0, 22)}...` : user?.fullname}
+            {user!.fullname?.length > 22 ? `${user?.fullname.slice(0, 22)}…` : user?.fullname}
           </span>
           <span className="text-muted truncate text-xs">{user?.role}</span>
         </span>

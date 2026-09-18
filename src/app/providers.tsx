@@ -25,9 +25,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [_, session] = await Promise.all([getDeviceInfo(), getSession()]);
-      if (session && session.user) setUser(session.user);
-      setIsLoading(false);
+      try {
+        const [_, session] = await Promise.all([getDeviceInfo(), getSession()]);
+        if (session && session.user) setUser(session.user);
+      } finally {
+        setIsLoading(false);
+      }
     })();
   }, []);
 

@@ -178,11 +178,66 @@ const withPWA = withPWAInit({
   ],
 });
 
+/**
+ * Derives the API origin from NEXT_PUBLIC_API_URL so the same CSP works in local,
+ * staging, and production. Falls back to the production host when unset.
+ */
+const apiOrigin = (): string => {
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (!configured) return "https://accounts-api.yadahtv.co";
+
+  try {
+    return new URL(configured).origin;
+  } catch {
+    return "https://accounts-api.yadahtv.co";
+  }
+};
+
+const contentSecurityPolicy = (): string => {
+  // React and Turbopack need `eval` for the dev overlay / HMR runtime. Production
+  // does not, so the allowance is scoped to development only.
+  const scriptSrc =
+    process.env.NODE_ENV === "production"
+      ? "script-src 'self' 'unsafe-inline'"
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+
+  return [
+    "default-src 'self'",
+    // `unsafe-inline` is required by the SSO custom-scheme handoff (inline
+    // `location.href` bootstrap) and Next's hydration bootstrap. Tighten with a
+    // nonce if the handoff ever moves to a server redirect.
+    scriptSrc,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    `connect-src 'self' ${apiOrigin()} https://fonts.googleapis.com https://fonts.gstatic.com`,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+  ].join("; ");
+};
+
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains",
+  },
+  { key: "Content-Security-Policy", value: contentSecurityPolicy() },
+];
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   output: "standalone",
   turbopack: {},
   allowedDevOrigins: ["10.10.1.2", "10.10.1.5"],
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
 };
 
 export default withPWA(nextConfig as any);
