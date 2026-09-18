@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 import {
   appendSsoTicket,
@@ -25,7 +25,7 @@ describe("isAllowedSsoCallback", () => {
   };
 
   test("rejects an attacker-controlled origin instead of redirecting a ticket to it", () => {
-    withEnv({ SSO_CALLBACK_ORIGINS: "https://yb.example,https://theview.example", SSO_ALLOW_ANY_CALLBACK: "" }, () => {
+    withEnv({ SSO_CALLBACK_ORIGINS: "https://yb.example", SSO_ALLOW_ANY_CALLBACK: "" }, () => {
       expect(isAllowedSsoCallback("https://evil.example/steal")).toBe(false);
       expect(isAllowedSsoCallback("https://evil.example")).toBe(false);
     });
@@ -38,10 +38,17 @@ describe("isAllowedSsoCallback", () => {
     });
   });
 
-  test("allows the default native scheme and rejects unknown schemes", () => {
-    withEnv({ SSO_CALLBACK_ORIGINS: "", SSO_ALLOW_ANY_CALLBACK: "" }, () => {
-      expect(isAllowedSsoCallback("theviewyadahtvco://sso/callback")).toBe(true);
+  test("allows a configured native scheme and rejects unknown schemes", () => {
+    withEnv({ SSO_CALLBACK_ORIGINS: "", SSO_CALLBACK_SCHEMES: "yb", SSO_ALLOW_ANY_CALLBACK: "" }, () => {
+      expect(isAllowedSsoCallback("yb://sso/callback")).toBe(true);
       expect(isAllowedSsoCallback("evil-scheme://sso/callback")).toBe(false);
+    });
+  });
+
+  test("has no default native scheme, so native callbacks stay denied until configured", () => {
+    withEnv({ SSO_CALLBACK_ORIGINS: "", SSO_CALLBACK_SCHEMES: "", SSO_ALLOW_ANY_CALLBACK: "" }, () => {
+      expect(isAllowedSsoCallback("yb://sso/callback")).toBe(false);
+      expect(isAllowedSsoCallback("theviewyadahtvco://sso/callback")).toBe(false);
     });
   });
 
@@ -83,33 +90,33 @@ describe("parseSsoAuthorizeParams", () => {
   test("reads a native custom-scheme callback from a phone", () => {
     const params = parseSsoAuthorizeParams(
       new URLSearchParams({
-        redirect: "theviewyadahtvco://sso/callback",
+        redirect: "yb://sso/callback",
         deviceId: "SM-M326B-977d93d4b817243e",
-        clientId: "theview",
+        clientId: "yb",
       }),
       origin,
     );
 
-    expect(params.redirect).toBe("theviewyadahtvco://sso/callback");
+    expect(params.redirect).toBe("yb://sso/callback");
     expect(params.deviceId).toBe("SM-M326B-977d93d4b817243e");
-    expect(params.clientId).toBe("theview");
+    expect(params.clientId).toBe("yb");
   });
 
   test("unwraps a nested authorize returnTo without dropping clientId", () => {
     const nested =
-      "/sso/authorize?redirect=theviewyadahtvco%3A%2F%2Fsso%2Fcallback&deviceId=iPhone14-vendor-id&clientId=theview";
+      "/sso/authorize?redirect=yb%3A%2F%2Fsso%2Fcallback&deviceId=iPhone14-vendor-id&clientId=yb";
     const params = parseSsoAuthorizeParams(new URLSearchParams({ redirect: nested }), origin);
 
-    expect(params.redirect).toBe("theviewyadahtvco://sso/callback");
+    expect(params.redirect).toBe("yb://sso/callback");
     expect(params.deviceId).toBe("iPhone14-vendor-id");
-    expect(params.clientId).toBe("theview");
+    expect(params.clientId).toBe("yb");
   });
 });
 
 describe("isSsoClientId", () => {
-  test("allows client apps that authorize here (yb, theview)", () => {
+  test("allows the client apps that authorize here (yb)", () => {
     expect(isSsoClientId("yb")).toBe(true);
-    expect(isSsoClientId("theview")).toBe(true);
+    expect(isSsoClientId("theview")).toBe(false);
   });
 
   test("does not treat accounts or unknown ids as SSO clients", () => {
@@ -150,13 +157,11 @@ describe("appendSsoTicket", () => {
   });
 
   test("appends t= to a custom-scheme callback used by native apps", () => {
-    expect(appendSsoTicket("theviewyadahtvco://sso/callback", "t1")).toBe("theviewyadahtvco://sso/callback?t=t1");
+    expect(appendSsoTicket("yb://sso/callback", "t1")).toBe("yb://sso/callback?t=t1");
   });
 
   test("keeps existing query params on the origin callback", () => {
-    expect(appendSsoTicket("theviewyadahtvco://sso/callback?src=android", "t1")).toBe(
-      "theviewyadahtvco://sso/callback?src=android&t=t1",
-    );
+    expect(appendSsoTicket("yb://sso/callback?src=android", "t1")).toBe("yb://sso/callback?src=android&t=t1");
   });
 });
 
@@ -167,14 +172,14 @@ describe("isWebCallback", () => {
   });
 
   test("treats custom schemes as native-app callbacks", () => {
-    expect(isWebCallback("theviewyadahtvco://sso/callback")).toBe(false);
+    expect(isWebCallback("yb://sso/callback")).toBe(false);
   });
 });
 
 describe("ssoCallbackHtml", () => {
   test("navigates to the origin callback and offers a tap fallback", () => {
-    const html = ssoCallbackHtml("theviewyadahtvco://sso/callback?t=t1");
-    expect(html).toContain("theviewyadahtvco://sso/callback?t=t1");
+    const html = ssoCallbackHtml("yb://sso/callback?t=t1");
+    expect(html).toContain("yb://sso/callback?t=t1");
     expect(html).toContain("location.href");
     expect(html).toContain("Tap here");
   });

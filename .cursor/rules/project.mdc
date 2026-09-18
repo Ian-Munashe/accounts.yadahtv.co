@@ -11,7 +11,7 @@ This repo is the **Yadah TV / PHD Ministries central account hub** (SSO + profil
 
 ## Non-negotiables
 
-- **Bun only** — never npm / yarn / pnpm
+- **Yarn only** — never npm / bun / pnpm
 - **Port 3001** for local/prod scripts (not 3000)
 - **Do not invent API endpoints** — use only contracts already in the codebase unless the user supplies new ones
 - **Do not weaken auth** — keep `proxy.ts`, iron-session actions, axios interceptor refresh, and `/sso/authorize` intact unless the task is explicitly a security change

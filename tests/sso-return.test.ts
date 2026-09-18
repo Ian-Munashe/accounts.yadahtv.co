@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 import {
   authPathWithReturnTo,
@@ -57,16 +57,16 @@ describe("destinationAfterAuth", () => {
 });
 
 describe("destinationAfterLogout", () => {
-  const viewReturnTo =
-    "/sso/authorize?deviceId=SM-M326B-977d93d4b817243e&clientId=theview&redirect=theviewyadahtvco%3A%2F%2Fsso%2Fcallback";
+  const nativeReturnTo =
+    "/sso/authorize?deviceId=SM-M326B-977d93d4b817243e&clientId=yb&redirect=yb%3A%2F%2Fsso%2Fcallback";
 
   test("sends the user to the origin app callback", () => {
-    expect(destinationAfterLogout(viewReturnTo)).toBe("theviewyadahtvco://sso/callback");
+    expect(destinationAfterLogout(nativeReturnTo)).toBe("yb://sso/callback");
   });
 
   test("unwraps a double-wrapped authorize returnTo", () => {
-    const nested = `/sso/authorize?redirect=${encodeURIComponent(viewReturnTo)}`;
-    expect(destinationAfterLogout(nested)).toBe("theviewyadahtvco://sso/callback");
+    const nested = `/sso/authorize?redirect=${encodeURIComponent(nativeReturnTo)}`;
+    expect(destinationAfterLogout(nested)).toBe("yb://sso/callback");
   });
 
   test("uses an https origin callback", () => {

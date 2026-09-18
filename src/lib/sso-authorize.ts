@@ -1,4 +1,4 @@
-const FIRST_PARTY_HOP_CLIENTS = new Set(["yb", "theview"]);
+const FIRST_PARTY_HOP_CLIENTS = new Set(["yb"]);
 
 /**
  * Callback origins (web) and schemes (native) that may receive an SSO ticket.
@@ -6,8 +6,11 @@ const FIRST_PARTY_HOP_CLIENTS = new Set(["yb", "theview"]);
  * A ticket is a 60s credential exchangeable for a full session, so redirect
  * targets must be allowlisted. Configure with SSO_CALLBACK_ORIGINS (comma-separated
  * https origins) and SSO_CALLBACK_SCHEMES (comma-separated native schemes).
+ *
+ * There is no default scheme: native callbacks are denied until
+ * SSO_CALLBACK_SCHEMES is set for the deployment.
  */
-const DEFAULT_CALLBACK_SCHEMES = ["theviewyadahtvco"];
+const DEFAULT_CALLBACK_SCHEMES: string[] = [];
 
 const configuredCallbackOrigins = (): string[] =>
   String(process.env.SSO_CALLBACK_ORIGINS ?? "")
