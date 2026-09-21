@@ -3,6 +3,7 @@ import { default as axiosInstance, CreateAxiosDefaults, InternalAxiosRequestConf
 
 import { useDeviceInfoState } from "@/stores";
 import { deleteSession, getSession, updateSession } from "@/actions/session-action";
+import { isOnAppPage } from "@/lib/sso-return";
 
 let isRefreshingToken: Promise<any> | null = null;
 
@@ -66,7 +67,12 @@ export const useAxios = () => {
       } catch (error: any) {
         await deleteSession();
         const returnTo = window.location.pathname + window.location.search;
-        window.location.href = `/signin?returnTo=${encodeURIComponent(returnTo)}`;
+        // A failed refresh during a sign-in/join server action is dispatched from
+        // /signin, where window.location is the POST target rather than the page the
+        // user is on. Only redirect when the browser is really on an app page.
+        if (isOnAppPage(window.location.pathname) && !returnTo.startsWith("/signin")) {
+          window.location.href = `/signin?returnTo=${encodeURIComponent(returnTo)}`;
+        }
         return Promise.reject(error);
       } finally {
         isRefreshingToken = null;

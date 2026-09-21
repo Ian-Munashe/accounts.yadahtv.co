@@ -4,6 +4,7 @@ import {
   authPathWithReturnTo,
   destinationAfterAuth,
   destinationAfterLogout,
+  isOnAppPage,
   resumeAfterAuth,
   shouldRedirectAuthenticatedGuest,
   ssoResumePath,
@@ -91,6 +92,29 @@ describe("shouldRedirectAuthenticatedGuest", () => {
   test("does not redirect an RSC refresh so authorize HTML is not parsed as a Next payload", () => {
     const headers = { get: (name: string) => (name.toLowerCase() === "rsc" ? "1" : null) };
     expect(shouldRedirectAuthenticatedGuest("GET", headers)).toBe(false);
+  });
+});
+
+describe("isOnAppPage", () => {
+  test("treats protected app pages as real pages", () => {
+    expect(isOnAppPage("/")).toBe(true);
+    expect(isOnAppPage("/profile")).toBe(true);
+    expect(isOnAppPage("/users")).toBe(true);
+  });
+
+  test("excludes auth pages, the approve handoff route, and asset paths", () => {
+    expect(isOnAppPage("/signin")).toBe(false);
+    expect(isOnAppPage("/join")).toBe(false);
+    expect(isOnAppPage("/sso/authorize")).toBe(false);
+    expect(isOnAppPage("/sso/authorize/anything")).toBe(false);
+    expect(isOnAppPage("/_next/static/chunks/main.js")).toBe(false);
+    expect(isOnAppPage("/fonts/Inter.woff2")).toBe(false);
+  });
+
+  test("rejects values that are not same-origin paths", () => {
+    expect(isOnAppPage("//evil.example/cb")).toBe(false);
+    expect(isOnAppPage("https://evil.example/steal")).toBe(false);
+    expect(isOnAppPage("")).toBe(false);
   });
 });
 
