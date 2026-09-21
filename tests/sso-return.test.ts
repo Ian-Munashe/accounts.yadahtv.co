@@ -1,9 +1,10 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
   authPathWithReturnTo,
   destinationAfterAuth,
   destinationAfterLogout,
+  resumeAfterAuth,
   shouldRedirectAuthenticatedGuest,
   ssoResumePath,
   ssoResumeTarget,
@@ -90,5 +91,63 @@ describe("shouldRedirectAuthenticatedGuest", () => {
   test("does not redirect an RSC refresh so authorize HTML is not parsed as a Next payload", () => {
     const headers = { get: (name: string) => (name.toLowerCase() === "rsc" ? "1" : null) };
     expect(shouldRedirectAuthenticatedGuest("GET", headers)).toBe(false);
+  });
+});
+
+describe("resumeAfterAuth", () => {
+  const browserOrigin = "https://accounts.yadahtv.co";
+
+  const stubBrowser = (assign: ReturnType<typeof vi.fn>) => {
+    vi.stubGlobal("window", { location: { origin: browserOrigin, assign, href: browserOrigin } });
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  test("navigates a web callback through authorize instead of a manual fetch it cannot read", async () => {
+    const assign = vi.fn();
+    stubBrowser(assign);
+    // A fetch with redirect: "manual" resolves to an opaque redirect: no Location,
+    // status 0 and ok false. The handoff must not depend on reading that response.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        type: "opaqueredirect",
+        status: 0,
+        ok: false,
+        headers: { get: () => null },
+        text: async () => "",
+      }),
+    );
+
+    await resumeAfterAuth(returnTo);
+
+    expect(assign).toHaveBeenCalledTimes(1);
+    expect(assign.mock.calls[0][0]).toContain("/sso/authorize");
+  });
+
+  test("writes the custom-scheme handoff document for a native callback", async () => {
+    const assign = vi.fn();
+    const write = vi.fn();
+    stubBrowser(assign);
+    vi.stubGlobal("document", { open: vi.fn(), write, close: vi.fn() });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        type: "basic",
+        status: 200,
+        ok: true,
+        headers: { get: () => null },
+        text: async () => "<html>handoff</html>",
+      }),
+    );
+
+    const nativeReturnTo = "/sso/authorize?deviceId=d1&clientId=yb&redirect=yb%3A%2F%2Fsso%2Fcallback";
+    await resumeAfterAuth(nativeReturnTo);
+
+    expect(write).toHaveBeenCalledWith("<html>handoff</html>");
+    expect(assign).not.toHaveBeenCalled();
   });
 });

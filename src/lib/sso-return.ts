@@ -1,5 +1,7 @@
 const isAuthorizePath = (value: string): boolean => value.startsWith("/sso/authorize");
 
+const isWebCallback = (value: string): boolean => /^https?:\/\//i.test(value);
+
 export const originCallbackFromReturnTo = (returnTo: string): string | undefined => {
   try {
     let current = returnTo;
@@ -84,6 +86,15 @@ export const resumeAfterAuth = async (returnTo?: string | null): Promise<void> =
     window.location.assign(url);
     return;
   }
+
+  const callback = originCallbackFromReturnTo(path);
+  if (!callback || isWebCallback(callback)) {
+    // A web callback is handed off with a 302. A manual fetch resolves that to an opaque
+    // response (no Location, status 0), so navigate instead and let the browser follow it.
+    window.location.assign(url);
+    return;
+  }
+
   await consumeAuthorizeDocument(url);
 };
 
