@@ -10,6 +10,9 @@ export const sessionOptions: SessionOptions = {
     sameSite: "lax",
     path: "/",
     secure: process.env.NODE_ENV === "production",
-    maxAge: Utils.instance.toSeconds(Utils.instance.futureDateTime("90d")),
+    // Long enough to stay signed in comfortably, short enough that a stolen cookie
+    // does not remain valid for a quarter of a year. The session is refreshed on
+    // each write, so active users are unaffected.
+    maxAge: Utils.instance.toSeconds(Utils.instance.futureDateTime("30d")),
   },
 };

@@ -19,7 +19,7 @@
   --field-border: transparent;
   --field-foreground: oklch(21.03% 0.0015 24.25);
   --field-placeholder: oklch(55.17% 0.003 24.25);
-  --focus: oklch(57.23% 0.2316 24.25);
+  --focus: transparent;
   --foreground: oklch(21.03% 0.0015 24.25);
   --muted: oklch(55.17% 0.003 24.25);
   --overlay: oklch(100% 0.0004 24.25);
@@ -64,7 +64,7 @@
   --field-border: transparent;
   --field-foreground: oklch(99.11% 0.0015 24.25);
   --field-placeholder: oklch(70.5% 0.003 24.25);
-  --focus: oklch(57.23% 0.2316 24.25);
+  --focus: transparent;
   --foreground: oklch(99.11% 0.0015 24.25);
   --muted: oklch(70.5% 0.003 24.25);
   --overlay: oklch(21.03% 0.003 24.25);
@@ -84,3 +84,9 @@
   --warning: oklch(82.03% 0.1392 48.79);
   --warning-foreground: oklch(21.03% 0.0059 48.79);
 }
+
+/*
+ * Focus rings are disabled above by setting `--focus: transparent`. HeroUI resolves
+ * every focus ring/outline color through `--focus`, so no component (or the
+ * InputGroup container) paints a ring, while error styling stays intact.
+ */

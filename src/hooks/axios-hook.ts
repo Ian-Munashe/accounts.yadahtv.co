@@ -50,7 +50,7 @@ export const useAxios = () => {
       if (!isRefreshingToken) {
         isRefreshingToken = (async () => {
           const session = await getSession();
-          if (!session) throw new Error("No session");
+          if (!session?.refreshToken) throw new Error("No session");
 
           const response = await interceptor.put("/user/refresh-token", { refreshToken: session.refreshToken });
           const { accessToken, refreshToken } = response.data;
@@ -61,25 +61,25 @@ export const useAxios = () => {
 
       try {
         const newAccessToken = await isRefreshingToken;
-        isRefreshingToken = null;
-
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-        return interceptor(originalRequest);
+        return await interceptor(originalRequest);
       } catch (error: any) {
-        isRefreshingToken = null;
         await deleteSession();
-        window.location.href = "/signin";
+        const returnTo = window.location.pathname + window.location.search;
+        window.location.href = `/signin?returnTo=${encodeURIComponent(returnTo)}`;
         return Promise.reject(error);
+      } finally {
+        isRefreshingToken = null;
       }
     },
-    [axios, interceptor],
+    [interceptor],
   );
 
   useEffect(() => {
     const requestInterceptor = interceptor.interceptors.request.use(
       async (config) => {
         const session = await getSession();
-        if (session) config.headers["Authorization"] = `Bearer ${session.accessToken}`;
+        if (session?.accessToken) config.headers["Authorization"] = `Bearer ${session.accessToken}`;
 
         return config;
       },
@@ -93,7 +93,12 @@ export const useAxios = () => {
         const status = error?.response?.status;
 
         if (status === 403) {
-          if (!isSignoutRequest(prevRequest)) window.location.href = "/";
+          // A 403 means authenticated-but-forbidden. Only bounce users who cannot
+          // legitimately view the page; others would land in a redirect loop.
+          const onAdminRoute = ["/users", "/applications"].some((route) =>
+            window.location.pathname.startsWith(route),
+          );
+          if (!isSignoutRequest(prevRequest) && onAdminRoute) window.location.href = "/";
           return Promise.reject(error);
         }
 

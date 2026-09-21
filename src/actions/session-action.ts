@@ -14,12 +14,26 @@ export const updateSession = async ({ accessToken, refreshToken, user, ssoReturn
   const cookieStore = await cookies();
   const session: IronSession<ISession> = await getIronSession<ISession>(cookieStore, sessionOptions);
 
-  if (user) session.user = user;
-  if (accessToken) session.accessToken = accessToken;
-  if (refreshToken) session.refreshToken = refreshToken;
-  if (ssoReturnTo) session.ssoReturnTo = ssoReturnTo;
+  let changed = false;
 
-  await session.save();
+  if (user && JSON.stringify(session.user) !== JSON.stringify(user)) {
+    session.user = user;
+    changed = true;
+  }
+  if (accessToken && session.accessToken !== accessToken) {
+    session.accessToken = accessToken;
+    changed = true;
+  }
+  if (refreshToken && session.refreshToken !== refreshToken) {
+    session.refreshToken = refreshToken;
+    changed = true;
+  }
+  if (ssoReturnTo && session.ssoReturnTo !== ssoReturnTo) {
+    session.ssoReturnTo = ssoReturnTo;
+    changed = true;
+  }
+
+  if (changed) await session.save();
   return JSON.parse(JSON.stringify(session));
 };
 

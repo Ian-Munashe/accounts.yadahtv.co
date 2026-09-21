@@ -33,18 +33,18 @@ Do not turn this into an unrelated product. Prefer extending existing account/SS
 
 ## Hard constraints
 
-1. **Bun only** — install, run, and script with Bun. Never use npm, yarn, or pnpm.
+1. **Yarn only** — install, run, and script with Yarn. Never use npm, bun, or pnpm.
 2. **Do not invent backend APIs** — this frontend talks to an external API (`NEXT_PUBLIC_API_URL`). Only call endpoints already used in the codebase unless the user explicitly provides new API contracts.
 3. **Do not weaken auth** — keep iron-session, `proxy.ts` guards, token refresh, and SSO ticket flow intact unless the task is a deliberate security change.
 4. **Never commit secrets** — no `.env`, `.env.local`, credentials, or private keys. Reference env **names** only.
 5. **Match existing patterns** — copy local conventions (hooks, stores, Formik inputs, HeroUI usage, barrel exports) before introducing new libraries or architectures.
-6. **Port is 3001** — `dev`, `start`, and Docker expose **3001**. Trust `package.json` / Dockerfile over older docs.
+6. **Port is 3001** — `dev` and `start` use **3001**. Trust `package.json` over older docs.
 
 ## Tech stack
 
 | Area | Choice |
 |------|--------|
-| Runtime / PM | Bun |
+| Runtime / PM | Node.js + Yarn |
 | Framework | Next.js 16 (App Router), `output: "standalone"` |
 | UI | React 19, HeroUI v3 (`@heroui/react`, `@heroui/styles`), Tailwind CSS v4 |
 | Data | Axios, TanStack React Query, Zustand + immer |
@@ -60,18 +60,19 @@ Path alias: `@/*` → `./src/*`.
 ## Commands
 
 ```bash
-bun install
-bun run dev      # http://localhost:3001
-bun run build    # next build --webpack
-bun run start    # standalone server on 3001
-bun run lint
+yarn install
+yarn dev         # http://localhost:3001
+yarn build       # next build --webpack
+yarn start       # standalone server on 3001
+yarn lint
+yarn test        # tests/ only
 ```
-
-Production image: multi-stage `Dockerfile` (Bun deps/build → Node 20 Alpine runner).
 
 ## Repository map
 
 ```text
+DOC_SSO.md                # Client SSO authorize; 60s ticket, never stored; exchange is Auth API DOC_SSO.md
+tests/                    # Vitest tests only — never colocate `*.test.ts` under src/
 src/
   app/                    # App Router
     (authentication)/     # guest: /signin, /join, /sso/authorize
@@ -121,7 +122,7 @@ Redirects must use **`createAppUrl` / `getPublicOrigin`** from `src/lib/request-
 - Client bootstrap: `Providers` loads device info + session, then hydrates `useUserState`.
 - Sign-in / join: OTP + identifier flows (email or phone) via forms under `components/forms`.
 - Sign-out / destructive confirms: `useModalState().showModal` + `toast` for errors.
-- **SSO**: `GET /sso/authorize` issues a backend ticket and redirects to the client app with `?ticket=...`. Requires `redirect`, `deviceId`, `clientId`. On 401, refresh tokens then retry; otherwise send user to `/signin` with `returnTo` and persist `ssoReturnTo` on the session. Sign-in and join must keep `returnTo` on Create Account / Sign In / Use a different contact links (`src/lib/sso-return.ts`). After sign-in or account creation, call `resumeAfterAuth` (do not wrap a path that is already `/sso/authorize`). After logout, call `resumeAfterLogout` using `ssoReturnTo` captured before `deleteSession` — that must open the origin app callback (for example `theviewyadahtvco://sso/callback`), not bounce back to Account Center sign-in.
+- **SSO**: Client apps use this UI only for authorize: `GET /sso/authorize?redirect&deviceId&clientId` (`yb`). Auth API accepts only `x-client-id: accounts` or `yb` at exchange. After session, Accounts `POST /sso/ticket` and returns `{redirect}?t=`. Ticket TTL is 60s and must never be stored; the client exchanges it on Auth `GET /sso/exchange?t=` for `accessToken` / `refreshToken`. Client docs: [`DOC_SSO.md`](./DOC_SSO.md). Exchange docs: Auth API `DOC_SSO.md`. Prefer query `deviceId` for the ticket, else the session JWT `deviceId`. http(s) callbacks 302; custom schemes HTML handoff. Helpers: `src/lib/sso-authorize.ts`. On 401 refresh then retry; else `/signin?returnTo=...` + `ssoReturnTo`. Sign-in/join keep `returnTo` (`src/lib/sso-return.ts`). After auth, `resumeAfterAuth`. After logout, `resumeAfterLogout` (origin callback with no `t`).
 
 Authenticated = presence of access token, refresh token, **and** user. Do not treat a half-filled session as logged in.
 
@@ -207,12 +208,14 @@ Never print or commit values from `.env.local`.
 - Avoid adding dependencies when an existing package already covers the need.
 - Do not add `useMemo` / `useCallback` by default; React Compiler is on. Follow existing local usage.
 - Keep comments rare and useful; do not leave debug `console.log` or commented-out redirect hacks.
+- Tests live in `tests/` at the repo root (`yarn test`). Do not add `*.test.ts` under `src/`.
+- Client-facing integration docs are `DOC_*.md` at the repo root (e.g. `DOC_SSO.md`).
 
 ## Change checklist
 
 Before finishing a task:
 
-1. Confirm Bun-only workflow and port **3001** assumptions still hold.
+1. Confirm Yarn-only workflow and port **3001** assumptions still hold.
 2. If routes changed → update `proxy.ts` (+ nav if needed).
 3. If session/user data changed → keep session cookie and Zustand user in sync.
 4. If calling API → use `useAxios` correctly (`axios` vs `interceptor`) and handle toast errors.
@@ -224,6 +227,7 @@ Before finishing a task:
 
 - Rewriting auth to NextAuth/Auth.js or another session library
 - Replacing HeroUI, Formik, Zustand, or Axios wholesale
-- Switching package managers
+- Switching package managers away from Yarn
+- Adding a Dockerfile or Docker workflow
 - Implementing or documenting the backend API server itself
 - Force-pushing, amending published history, or committing without being asked
