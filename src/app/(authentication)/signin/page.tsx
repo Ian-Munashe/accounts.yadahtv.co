@@ -13,6 +13,7 @@ import { OTPForm, RequestCodeForm } from "@/components/forms";
 import { updateSession } from "@/actions/session-action";
 import { getErrorMessage } from "@/lib/error-message";
 import { authPathWithReturnTo, resumeAfterAuth } from "@/lib/sso-return";
+import { useOTPWaitState } from "@/stores";
 
 enum Steps {
   VERIFY = "verify",
@@ -53,7 +54,10 @@ export default function SignIn() {
       const { accessToken, refreshToken } = response.data;
       await updateSession({ accessToken, refreshToken });
       const isSuccess = await getUser();
-      if (isSuccess) await resumeAfterAuth(returnTo);
+      if (isSuccess) {
+        useOTPWaitState.getState().cancel();
+        await resumeAfterAuth(returnTo);
+      }
     } catch (error) {
       toast.danger(getErrorMessage(error));
     }

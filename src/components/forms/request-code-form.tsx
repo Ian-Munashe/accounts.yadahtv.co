@@ -7,7 +7,7 @@ import { MdOutlineAlternateEmail } from "react-icons/md";
 import { Button, cn, Form, Key, Separator, Spinner, Surface, Tabs, toast } from "@heroui/react";
 
 import { Utils } from "@/lib/utils";
-import { OTP_RESEND_WAIT_SECONDS, useOTPWaitState } from "@/stores";
+import { useOTPWait } from "@/hooks";
 import { phoneCodes } from "@/phone-codes";
 import { useAxios } from "@/hooks/axios-hook";
 import { getErrorMessage } from "@/lib/error-message";
@@ -30,7 +30,7 @@ const tabs: ITab[] = [
 
 export const RequestCodeForm: React.FC<Props> = (props) => {
   const { axios } = useAxios();
-  const { timer, startCountdown } = useOTPWaitState();
+  const { timer, isSyncing, beginCountdown } = useOTPWait();
 
   const [isEmail, setIsEmail] = useState<boolean>(true);
   const [option, setOption] = useState<Key>(tabs[0].tab);
@@ -44,7 +44,7 @@ export const RequestCodeForm: React.FC<Props> = (props) => {
         const identifier = isEmail ? values.email : formattedPhone;
         const endpoint = values.action === "signin" ? "/user/signin" : "/otp/create";
         await axios.post(endpoint, { identifier, action: values.action });
-        startCountdown(OTP_RESEND_WAIT_SECONDS);
+        void beginCountdown();
         props.onSuccess?.(identifier);
       } catch (error) {
         toast.danger(getErrorMessage(error));
@@ -116,7 +116,7 @@ export const RequestCodeForm: React.FC<Props> = (props) => {
           type="submit"
           fullWidth
           isPending={formik.isSubmitting}
-          isDisabled={formik.isSubmitting || timer > 0 || !(formik.isValid && formik.dirty)}
+          isDisabled={formik.isSubmitting || isSyncing || timer > 0 || !(formik.isValid && formik.dirty)}
         >
           {({ isPending }) => (
             <React.Fragment>
@@ -124,9 +124,7 @@ export const RequestCodeForm: React.FC<Props> = (props) => {
             </React.Fragment>
           )}
         </Button>
-        {timer > 0 && (
-          <p className="text-muted text-center text-sm">You can request another code in {timer}s.</p>
-        )}
+        {timer > 0 && <p className="text-muted text-center text-sm">You can request another code in {timer}s.</p>}
       </Form>
       {props.footer && (
         <div className="flex flex-col items-center space-y-4">

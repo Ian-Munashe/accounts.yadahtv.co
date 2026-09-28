@@ -19,7 +19,7 @@ import {
 } from "@heroui/react";
 
 import { mask } from "@/lib/mask";
-import { OTP_RESEND_WAIT_SECONDS, useOTPWaitState } from "@/stores";
+import { useOTPWait } from "@/hooks";
 import { useAxios } from "@/hooks/axios-hook";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -35,7 +35,7 @@ interface Props {
 
 export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = false, ...props }) => {
   const { axios } = useAxios();
-  const { timer, startCountdown } = useOTPWaitState();
+  const { timer, isSyncing, beginCountdown } = useOTPWait();
 
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,12 +59,12 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
   });
 
   const handleResend = async () => {
-    if (timer < 1 && props.identifier && props.action) {
+    if (timer < 1 && !isSyncing && props.identifier && props.action) {
       try {
         setLoading(true);
         const response = await axios.post(`/otp/create`, { identifier: props.identifier, action: props.action });
         toast.success(response.data.message);
-        startCountdown(OTP_RESEND_WAIT_SECONDS);
+        void beginCountdown();
         setValue("");
       } catch (error) {
         toast.danger(getErrorMessage(error));
@@ -125,7 +125,11 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
             {timer > 0 ? null : loading ? (
               <Spinner size="sm" />
             ) : (
-              <Link onPress={handleResend} isDisabled={timer > 0} className="text-accent text-sm font-medium">
+              <Link
+                onPress={handleResend}
+                isDisabled={timer > 0 || isSyncing}
+                className="text-accent text-sm font-medium"
+              >
                 Resend code
               </Link>
             )}

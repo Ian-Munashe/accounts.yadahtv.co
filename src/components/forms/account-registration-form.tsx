@@ -12,6 +12,7 @@ import { RegisterValidationSchema } from "@/validations";
 import { getErrorMessage } from "@/lib/error-message";
 import { updateSession } from "@/actions/session-action";
 import { authPathWithReturnTo, resumeAfterAuth } from "@/lib/sso-return";
+import { useOTPWaitState } from "@/stores";
 import { AutocompleteInput, SelectInput, TextField } from "../inputs";
 
 interface Props {
@@ -34,7 +35,10 @@ export const AccountRegistrationForm: React.FC<Props> = (props) => {
         const { accessToken, refreshToken } = response.data;
         await updateSession({ accessToken, refreshToken });
         const isSuccess = await getUser();
-        if (isSuccess) await resumeAfterAuth(props.returnTo);
+        if (isSuccess) {
+          useOTPWaitState.getState().cancel();
+          await resumeAfterAuth(props.returnTo);
+        }
       } catch (error) {
         toast.danger(getErrorMessage(error));
       }

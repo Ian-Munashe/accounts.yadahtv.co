@@ -137,7 +137,7 @@ Authenticated = presence of access token, refresh token, **and** user. Do not tr
 - Errors: `toast.danger(error.response?.data?.message || error.message)` unless a local pattern differs.
 - Loading overlays for longer mutations: `useGlobalState().setIsProgress`.
 
-Known endpoint families already in use include `/user`, `/user/*`, `/contacts/*`, `/devices/*`, `/admin/users`, SSO `/sso/ticket`, and application admin routes used by application cards/modals. Grep the repo before adding calls.
+Known endpoint families already in use include `/user`, `/user/*`, `/contacts/*`, `/devices/*`, `/admin/users`, SSO `/sso/ticket`, and application admin routes used by application cards/modals. Grep the repo before adding calls. `GET /health` also returns the API's `time` (epoch ms); the OTP resend cooldown anchors to it (`src/lib/server-time.ts` + `src/hooks/otp-wait-hook.ts`) so the device clock cannot cut the wait short.
 
 ## State management
 
@@ -147,7 +147,7 @@ Known endpoint families already in use include `/user`, `/user/*`, `/contacts/*`
 | `useModalState` | Global confirm/alert modal |
 | `useGlobalState` | Progress / shared UI flags |
 | `useDeviceInfoState` | Capacitor device + `clientId: "accounts"` |
-| `useOTPWaitState` | OTP cooldown / wait |
+| `useOTPWaitState` | OTP resend cooldown: server-anchored `deadline` + monotonic ticker |
 | `useUsersListState` | Users list helpers (`data-state`) |
 
 Zustand stores use **immer** middleware. Keep stores thin; put API orchestration in hooks.
