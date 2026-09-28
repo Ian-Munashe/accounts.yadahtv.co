@@ -4,6 +4,7 @@ import { useAxios } from "./axios-hook";
 import { useGlobalState, useModalState, useUserState } from "@/stores";
 import { deleteSession, getSession, updateSession } from "@/actions/session-action";
 import { resumeAfterLogout } from "@/lib/sso-return";
+import { getErrorMessage } from "@/lib/error-message";
 
 export const useAuthentication = () => {
   const { interceptor } = useAxios();
@@ -21,15 +22,16 @@ export const useAuthentication = () => {
         try {
           const session = await getSession();
           const ssoReturnTo = session.ssoReturnTo;
+          const ssoOrigin = session.ssoOrigin;
           try {
             await interceptor.get("/user/signout");
           } catch {
             // Local logout and origin redirect still proceed if the API call fails.
           }
           await deleteSession();
-          resumeAfterLogout(ssoReturnTo);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message || error.message);
+          resumeAfterLogout(ssoReturnTo, ssoOrigin);
+        } catch (error) {
+          toast.danger(getErrorMessage(error));
         } finally {
           setIsProgress(false);
         }
@@ -43,8 +45,8 @@ export const useAuthentication = () => {
       await updateSession({ user });
       setUser(user);
       return true;
-    } catch (error: any) {
-      toast.danger(error.response?.data?.message || error.message);
+    } catch (error) {
+      toast.danger(getErrorMessage(error));
       return false;
     }
   };

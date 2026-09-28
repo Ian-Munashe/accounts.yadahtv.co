@@ -5,6 +5,7 @@ import { Button, Separator, Surface, toast } from "@heroui/react";
 import { LuLogOut, LuPen, LuPhone, LuShield } from "react-icons/lu";
 
 import { useAuthentication, useAxios } from "@/hooks";
+import { getErrorMessage } from "@/lib/error-message";
 import { useModalState, useGlobalState, useUserState } from "@/stores";
 
 interface Props {
@@ -33,8 +34,8 @@ export const AccountInfoCard: React.FC<Props> = (props) => {
             const payload = { identifier: user?.identifier, action };
             await axios.post("/otp/create", payload);
             props.onChangeIdentifier(action);
-          } catch (error: any) {
-            toast.danger(error.response?.data?.message ?? error.message);
+          } catch (error) {
+            toast.danger(getErrorMessage(error));
           } finally {
             setIsProgress(false);
           }

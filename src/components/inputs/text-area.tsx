@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { TextField, Label, FieldError, TextArea as HTextArea } from "@heroui/react";
 
 import { Utils } from "@/lib/utils";
 
 interface TextAreaProps {
-  formik: any;
+  formik: IFormikInput;
   name: string;
   label: string;
   placeholder?: string;
@@ -15,17 +15,18 @@ interface TextAreaProps {
 }
 
 export const TextArea: React.FC<TextAreaProps> = ({ isRequired = true, ...props }) => {
-  const meta = useMemo(() => {
-    const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
-    const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
-    return {
-      error,
-      touched,
-      errorMessage: typeof error === "string" ? error : undefined,
-    };
-  }, [props.formik?.errors, props.formik?.touched, props.name]);
+  const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
+  const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
+  const meta = {
+    error,
+    touched,
+    errorMessage: typeof error === "string" ? error : undefined,
+  };
 
-  const value = Utils.instance.getValueByPath(props.formik?.values, props.name);
+  const value = Utils.instance.getValueByPath<string | number | readonly string[] | undefined>(
+    props.formik?.values,
+    props.name,
+  );
   const hasError = Boolean(meta.error && (meta.touched || props.formik?.submitCount > 0));
 
   return (

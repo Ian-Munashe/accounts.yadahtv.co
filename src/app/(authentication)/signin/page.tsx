@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Description, Separator, toast } from "@heroui/react";
@@ -10,8 +10,9 @@ import { useAuthentication } from "@/hooks";
 import { StepPill } from "@/components/step-pill";
 import { stepFadeAnimation } from "@/lib/animations";
 import { OTPForm, RequestCodeForm } from "@/components/forms";
-import { getSession, updateSession } from "@/actions/session-action";
-import { authPathWithReturnTo, resumeAfterAuth, ssoResumeTarget } from "@/lib/sso-return";
+import { updateSession } from "@/actions/session-action";
+import { getErrorMessage } from "@/lib/error-message";
+import { authPathWithReturnTo, resumeAfterAuth } from "@/lib/sso-return";
 
 enum Steps {
   VERIFY = "verify",
@@ -28,11 +29,6 @@ export default function SignIn() {
 
   const [identifier, setIdentifier] = useState<string>("");
   const [step, setStep] = useState<Steps>(Steps.CONTACT);
-
-  useEffect(() => {
-    if (!returnTo) return;
-    void updateSession({ ssoReturnTo: returnTo }).catch(() => {});
-  }, [returnTo]);
 
   const steps: Steps[] = [Steps.CONTACT, Steps.VERIFY];
   const stepIndex = steps.findIndex((i) => i === step);
@@ -57,12 +53,9 @@ export default function SignIn() {
       const { accessToken, refreshToken } = response.data;
       await updateSession({ accessToken, refreshToken });
       const isSuccess = await getUser();
-      if (isSuccess) {
-        const session = await getSession();
-        await resumeAfterAuth(ssoResumeTarget(returnTo, session.ssoReturnTo));
-      }
-    } catch (error: any) {
-      toast.danger(error?.response?.data?.message ?? error.message);
+      if (isSuccess) await resumeAfterAuth(returnTo);
+    } catch (error) {
+      toast.danger(getErrorMessage(error));
     }
   };
 

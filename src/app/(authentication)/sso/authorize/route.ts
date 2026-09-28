@@ -58,10 +58,11 @@ const issueTicketAndHandoff = async ({ request, accessToken, redirect, queryDevi
   const headers = { Authorization: `Bearer ${accessToken}` };
   try {
     const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/sso/ticket`, { deviceId }, { headers });
-    return redirectToOriginApp(appendSsoTicket(redirect, response.data.ticket));
-  } catch (error: any) {
-    if (error.response?.status === 401) return await refreshThenHandoff({ request, redirect, queryDeviceId });
-    return new NextResponse("Single Sign-On handshake failed", { status: error.response?.status || 500 });
+    return completeSsoHandoff(request, redirect, response.data.ticket);
+  } catch (error) {
+    const status = (error as { response?: { status?: number } }).response?.status;
+    if (status === 401) return await refreshThenHandoff({ request, redirect, queryDeviceId });
+    return new NextResponse("Single Sign-On handshake failed", { status: status || 500 });
   }
 };
 
@@ -94,11 +95,21 @@ const refreshThenHandoff = async ({
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
-    return redirectToOriginApp(appendSsoTicket(redirect, retryResponse.data.ticket));
+    return completeSsoHandoff(request, redirect, retryResponse.data.ticket);
   } catch {
     await deleteSession();
     return redirectToSignin(request);
   }
+};
+
+/**
+ * Persists the origin app on the session only once a ticket has actually been issued, and
+ * marks the session as SSO-originated. An abandoned handshake must leave no link, otherwise
+ * a later direct sign-in would resume SSO that the user never completed.
+ */
+const completeSsoHandoff = async (request: NextRequest, callbackUrl: string, ticket: string) => {
+  await updateSession({ ssoReturnTo: request.nextUrl.pathname + request.nextUrl.search, ssoOrigin: true });
+  return redirectToOriginApp(appendSsoTicket(callbackUrl, ticket));
 };
 
 const redirectToOriginApp = (callbackUrl: string) => {
@@ -112,8 +123,7 @@ const redirectToOriginApp = (callbackUrl: string) => {
   });
 };
 
-const redirectToSignin = async (request: NextRequest) => {
-  await updateSession({ ssoReturnTo: request.nextUrl.pathname + request.nextUrl.search });
+const redirectToSignin = (request: NextRequest) => {
   const loginUrl = createAppUrl(request, "/signin");
   loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);

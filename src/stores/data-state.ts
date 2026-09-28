@@ -17,12 +17,8 @@ const createInitialState = () => ({
   filters: [],
 });
 
-const stateInstances = new Map<string, any>();
-
-export const createDataState = (stateName: string) => {
-  if (stateInstances.has(stateName)) return stateInstances.get(stateName);
-
-  const useDataStore = create<DataState>()(
+const createDataStore = () =>
+  create<DataState>()(
     immer((set) => ({
       ...createInitialState(),
       setPage: (page) => set({ page }),
@@ -31,6 +27,14 @@ export const createDataState = (stateName: string) => {
       resetState: () => set({ ...createInitialState() }),
     })),
   );
+
+const stateInstances = new Map<string, ReturnType<typeof createDataStore>>();
+
+export const createDataState = (stateName: string) => {
+  const existing = stateInstances.get(stateName);
+  if (existing) return existing;
+
+  const useDataStore = createDataStore();
 
   stateInstances.set(stateName, useDataStore);
   return useDataStore;

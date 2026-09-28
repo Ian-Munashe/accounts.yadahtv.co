@@ -31,11 +31,6 @@ export const authPathWithReturnTo = (path: "/signin" | "/join", returnTo?: strin
 export const ssoResumePath = (returnTo: string): string =>
   isAuthorizePath(returnTo) ? returnTo : `/sso/authorize?redirect=${encodeURIComponent(returnTo)}`;
 
-export const ssoResumeTarget = (
-  returnToFromQuery?: string | null,
-  ssoReturnToFromSession?: string | null,
-): string | undefined => returnToFromQuery || ssoReturnToFromSession || undefined;
-
 export const destinationAfterAuth = (returnTo?: string | null): string => (returnTo ? ssoResumePath(returnTo) : "/");
 
 type HeaderReader = { get(name: string): string | null };
@@ -63,8 +58,14 @@ export const shouldRedirectAuthenticatedGuest = (method: string, headers?: Heade
   return true;
 };
 
-export const destinationAfterLogout = (returnTo?: string | null): string => {
-  if (!returnTo) return "/signin";
+/**
+ * Logout only returns the user to an external app when the session was actually linked
+ * to one by a completed SSO handshake (`ssoOrigin`). A `ssoReturnTo` without that marker
+ * is stale — e.g. left by an abandoned handshake or an older build — and must not send
+ * the user to a third-party callback.
+ */
+export const destinationAfterLogout = (returnTo?: string | null, ssoOrigin?: boolean): string => {
+  if (!ssoOrigin || !returnTo) return "/signin";
   return originCallbackFromReturnTo(returnTo) || "/signin";
 };
 
@@ -112,6 +113,6 @@ export const resumeAfterAuth = async (returnTo?: string | null): Promise<void> =
   await consumeAuthorizeDocument(url);
 };
 
-export const resumeAfterLogout = (returnTo?: string | null): void => {
-  window.location.href = destinationAfterLogout(returnTo);
+export const resumeAfterLogout = (returnTo?: string | null, ssoOrigin?: boolean): void => {
+  window.location.href = destinationAfterLogout(returnTo, ssoOrigin);
 };

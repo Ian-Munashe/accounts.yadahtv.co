@@ -8,7 +8,6 @@ import {
   resumeAfterAuth,
   shouldRedirectAuthenticatedGuest,
   ssoResumePath,
-  ssoResumeTarget,
 } from "@/lib/sso-return";
 
 const returnTo = "/sso/authorize?redirect=https://app.example/cb&deviceId=d1&clientId=c1";
@@ -34,20 +33,6 @@ describe("ssoResumePath", () => {
   });
 });
 
-describe("ssoResumeTarget", () => {
-  test("prefers the query value over the session value", () => {
-    expect(ssoResumeTarget(returnTo, "/sso/authorize?redirect=other")).toBe(returnTo);
-  });
-
-  test("falls back to the session value", () => {
-    expect(ssoResumeTarget(null, returnTo)).toBe(returnTo);
-  });
-
-  test("returns undefined when neither is set", () => {
-    expect(ssoResumeTarget(null, undefined)).toBeUndefined();
-  });
-});
-
 describe("destinationAfterAuth", () => {
   test("resumes SSO when returnTo is set", () => {
     expect(destinationAfterAuth(returnTo)).toBe(ssoResumePath(returnTo));
@@ -62,21 +47,28 @@ describe("destinationAfterLogout", () => {
   const nativeReturnTo =
     "/sso/authorize?deviceId=SM-M326B-977d93d4b817243e&clientId=yb&redirect=yb%3A%2F%2Fsso%2Fcallback";
 
-  test("sends the user to the origin app callback", () => {
-    expect(destinationAfterLogout(nativeReturnTo)).toBe("yb://sso/callback");
+  test("sends the user to the origin app callback after a completed SSO handshake", () => {
+    expect(destinationAfterLogout(nativeReturnTo, true)).toBe("yb://sso/callback");
   });
 
   test("unwraps a double-wrapped authorize returnTo", () => {
     const nested = `/sso/authorize?redirect=${encodeURIComponent(nativeReturnTo)}`;
-    expect(destinationAfterLogout(nested)).toBe("yb://sso/callback");
+    expect(destinationAfterLogout(nested, true)).toBe("yb://sso/callback");
   });
 
   test("uses an https origin callback", () => {
-    expect(destinationAfterLogout(returnTo)).toBe("https://app.example/cb");
+    expect(destinationAfterLogout(returnTo, true)).toBe("https://app.example/cb");
+  });
+
+  test("ignores a returnTo that was never linked to a completed handshake", () => {
+    // A stale/abandoned ssoReturnTo (or one left by an older build) must not send
+    // the user to an external app on logout.
+    expect(destinationAfterLogout(returnTo)).toBe("/signin");
+    expect(destinationAfterLogout(returnTo, false)).toBe("/signin");
   });
 
   test("goes to sign-in when returnTo is missing", () => {
-    expect(destinationAfterLogout(undefined)).toBe("/signin");
+    expect(destinationAfterLogout(undefined, true)).toBe("/signin");
   });
 });
 

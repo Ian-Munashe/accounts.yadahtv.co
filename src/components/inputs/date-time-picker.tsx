@@ -1,13 +1,13 @@
 "use client";
 
-import React, { Fragment, useMemo } from "react";
+import React, { Fragment } from "react";
 import { parseAbsoluteToLocal } from "@internationalized/date";
 import { Calendar, DateField, DatePicker, FieldError, Label, TimeField, TimeValue } from "@heroui/react";
 
 import { Utils } from "@/lib/utils";
 
 interface Props {
-  formik: any;
+  formik: IFormikInput;
   name: string;
   label?: string;
   isRequired?: boolean;
@@ -16,21 +16,20 @@ interface Props {
   granularity?: "day" | "hour" | "minute" | "second";
 }
 
-export const DateTimePicker: React.FC<Props> = ({ isRequired = true, isDisabled = false, ...props }: Props & any) => {
+export const DateTimePicker: React.FC<Props> = ({ isRequired = true, isDisabled = false, ...props }) => {
   const hourCycle = 24;
   const timeGranularity = props.granularity !== "day" ? props.granularity : undefined;
   const showTimeField = !!timeGranularity;
 
-  const meta = useMemo(() => {
-    const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
-    const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
-    return {
-      error,
-      touched,
-      errorMessage: typeof error === "string" ? error : undefined,
-    };
-  }, [props.formik?.errors, props.formik?.touched, props.name]);
+  const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
+  const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
+  const meta = {
+    error,
+    touched,
+    errorMessage: typeof error === "string" ? error : undefined,
+  };
 
+  const value = Utils.instance.getValueByPath<string>(props.formik?.values, props.name);
   const hasError = Boolean(meta.error && (meta.touched || props.formik?.submitCount > 0));
 
   return (
@@ -45,10 +44,10 @@ export const DateTimePicker: React.FC<Props> = ({ isRequired = true, isDisabled 
       isInvalid={hasError}
       className="w-full"
       shouldForceLeadingZeros={true}
-      value={props.formik.values[props.name] ? parseAbsoluteToLocal(props.formik.values[props.name]) : undefined}
-      onChange={(value: any) => {
+      value={value ? parseAbsoluteToLocal(value) : undefined}
+      onChange={(value) => {
         if (!value) return;
-        const dateTime = value.toDate ? new Date(value.toDate()) : new Date(value);
+        const dateTime = new Date(value.toDate());
         props.formik.setFieldValue(props.name, dateTime.toISOString());
       }}
     >

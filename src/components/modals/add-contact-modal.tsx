@@ -4,6 +4,7 @@ import { Chip, Description, Modal, Separator, toast } from "@heroui/react";
 
 import { useAxios } from "@/hooks";
 import { OTPForm, RequestCodeForm } from "../forms";
+import { getErrorMessage } from "@/lib/error-message";
 import { useGlobalState, useUserState } from "@/stores";
 import { updateSession } from "@/actions/session-action";
 
@@ -70,8 +71,8 @@ export const AddContactModal: React.FC<Props> = (props) => {
       setUser(user);
       props.onOpenChange(false);
       toast.success(response.data.message);
-    } catch (error: any) {
-      toast.danger(error?.response?.data?.message ?? error.message);
+    } catch (error) {
+      toast.danger(getErrorMessage(error));
     } finally {
       setIsProgress(false);
     }

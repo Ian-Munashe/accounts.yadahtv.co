@@ -9,6 +9,7 @@ import { countries } from "@/countries";
 import { useUserState } from "@/stores";
 import { genderOptions } from "@/gender-options";
 import { updateSession } from "@/actions/session-action";
+import { getErrorMessage } from "@/lib/error-message";
 import { SelectInput, AutocompleteInput, TextField } from "../inputs";
 
 export const PersonalInfoCard: React.FC = () => {
@@ -24,8 +25,8 @@ export const PersonalInfoCard: React.FC = () => {
         await updateSession({ user });
         setUser(user);
         toast.success("Personal information updated successfully!");
-      } catch (error: any) {
-        toast.danger(error.response?.data?.message || error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
       }
     },
   });

@@ -98,7 +98,7 @@ Route protection lives in **`src/proxy.ts`** (matcher excludes `api`, `_next/sta
 
 | Kind | Paths | Rules |
 |------|-------|--------|
-| Guest | `/signin`, `/join` | If already authenticated: resume SSO when `returnTo` or session `ssoReturnTo` is set, otherwise `/` |
+| Guest | `/signin`, `/join` | If already authenticated: resume SSO only when the **live `returnTo` query** is present, otherwise `/` |
 | Protected | `/`, `/profile`, `/devices`, `/users`, `/applications` | Require session (`accessToken` + `refreshToken` + `user`) |
 | Admin | `/users` | `superadmin` or `admin` |
 | Superadmin | `/applications` | `superadmin` only |
@@ -116,13 +116,13 @@ Redirects must use **`createAppUrl` / `getPublicOrigin`** from `src/lib/request-
 
 ## Session & auth model
 
-- Session shape (`ISession`): optional `user`, `accessToken`, `refreshToken`, `ssoReturnTo`.
+- Session shape (`ISession`): optional `user`, `accessToken`, `refreshToken`, `ssoReturnTo`, `ssoOrigin`.
 - Cookie config: `src/session-options.ts` — `NEXT_AUTH_SECRET`, `NEXT_COOKIE_NAME`; `secure` in production; long-lived cookie via `Utils`.
 - Server actions: `src/actions/session-action.ts` — `getSession`, `updateSession`, `deleteSession` (always serialize with `JSON.parse(JSON.stringify(...))` after iron-session ops).
 - Client bootstrap: `Providers` loads device info + session, then hydrates `useUserState`.
 - Sign-in / join: OTP + identifier flows (email or phone) via forms under `components/forms`.
 - Sign-out / destructive confirms: `useModalState().showModal` + `toast` for errors.
-- **SSO**: Client apps use this UI only for authorize: `GET /sso/authorize?redirect&deviceId&clientId` (`yb`). Auth API accepts only `x-client-id: accounts` or `yb` at exchange. After session, Accounts `POST /sso/ticket` and returns `{redirect}?t=`. Ticket TTL is 60s and must never be stored; the client exchanges it on Auth `GET /sso/exchange?t=` for `accessToken` / `refreshToken`. Client docs: [`DOC_SSO.md`](./DOC_SSO.md). Exchange docs: Auth API `DOC_SSO.md`. Prefer query `deviceId` for the ticket, else the session JWT `deviceId`. http(s) callbacks 302; custom schemes HTML handoff. Helpers: `src/lib/sso-authorize.ts`. On 401 refresh then retry; else `/signin?returnTo=...` + `ssoReturnTo`. Sign-in/join keep `returnTo` (`src/lib/sso-return.ts`). After auth, `resumeAfterAuth`. After logout, `resumeAfterLogout` (origin callback with no `t`).
+- **SSO**: Client apps use this UI only for authorize: `GET /sso/authorize?redirect&deviceId&clientId` (`yb`). Auth API accepts only `x-client-id: accounts` or `yb` at exchange. After session, Accounts `POST /sso/ticket` and returns `{redirect}?t=`. Ticket TTL is 60s and must never be stored; the client exchanges it on Auth `GET /sso/exchange?t=` for `accessToken` / `refreshToken`. Client docs: [`DOC_SSO.md`](./DOC_SSO.md). Exchange docs: Auth API `DOC_SSO.md`. Prefer query `deviceId` for the ticket, else the session JWT `deviceId`. http(s) callbacks 302; custom schemes HTML handoff. Helpers: `src/lib/sso-authorize.ts`. On 401 refresh then retry; an unauthenticated authorize redirects to `/signin?returnTo=...` without persisting SSO state. SSO must only ever start from the **live `returnTo`** — never a session value. `ssoReturnTo` plus `ssoOrigin` are written only when a ticket is issued (a completed handshake), and logout returns to the origin app only when `ssoOrigin` is set; otherwise it goes to `/signin`. Sign-in/join keep `returnTo` (`src/lib/sso-return.ts`). After auth, `resumeAfterAuth`. After logout, `resumeAfterLogout` (origin callback with no `t`).
 
 Authenticated = presence of access token, refresh token, **and** user. Do not treat a half-filled session as logged in.
 

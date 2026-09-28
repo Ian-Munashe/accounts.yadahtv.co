@@ -4,6 +4,7 @@ import { Description, Surface, Switch, toast } from "@heroui/react";
 import { useAxios } from "@/hooks";
 import { useUserState } from "@/stores";
 import { updateSession } from "@/actions/session-action";
+import { getErrorMessage } from "@/lib/error-message";
 import { PiBellSimpleRingingBold } from "react-icons/pi";
 
 const APP_LABELS: Record<string, string> = {
@@ -28,9 +29,9 @@ export const NotificationsCard: React.FC = () => {
       const response = await interceptor.put("/utils/notifications-toggle", { enabled, application: appKey });
       await updateSession({ user: { ...user, metadata: updatedMetadata } });
       toast.success(response.data.message || "Notification preference updated.");
-    } catch (error: any) {
+    } catch (error) {
       updateUser({ metadata: user.metadata });
-      toast.danger(error.response?.data?.message || error.message);
+      toast.danger(getErrorMessage(error));
     }
   };
 
