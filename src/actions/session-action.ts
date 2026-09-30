@@ -10,13 +10,7 @@ export const getSession = async (): Promise<ISession> => {
   return JSON.parse(JSON.stringify(session));
 };
 
-export const updateSession = async ({
-  accessToken,
-  refreshToken,
-  user,
-  ssoReturnTo,
-  ssoOrigin,
-}: ISession): Promise<ISession> => {
+export const updateSession = async ({ accessToken, refreshToken, user }: ISession): Promise<ISession> => {
   const cookieStore = await cookies();
   const session: IronSession<ISession> = await getIronSession<ISession>(cookieStore, sessionOptions);
 
@@ -32,14 +26,6 @@ export const updateSession = async ({
   }
   if (refreshToken && session.refreshToken !== refreshToken) {
     session.refreshToken = refreshToken;
-    changed = true;
-  }
-  if (ssoReturnTo && session.ssoReturnTo !== ssoReturnTo) {
-    session.ssoReturnTo = ssoReturnTo;
-    changed = true;
-  }
-  if (ssoOrigin && session.ssoOrigin !== ssoOrigin) {
-    session.ssoOrigin = ssoOrigin;
     changed = true;
   }
 

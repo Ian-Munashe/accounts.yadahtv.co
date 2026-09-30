@@ -23,7 +23,15 @@ const authorize = async (request: NextRequest) => {
   const { redirect, deviceId, clientId } = parseSsoAuthorizeParams(searchParams, getPublicOrigin(request));
   const session = await getSession();
   const isAuthenticated = Boolean(session.accessToken && session.refreshToken && session.user);
-  const isAuthorizeRequest = Boolean(redirect && isSsoClientId(clientId) && isAllowedSsoCallback(redirect));
+  const isClientRequest = isSsoClientId(clientId);
+  const isAuthorizeRequest = Boolean(redirect && isClientRequest && isAllowedSsoCallback(redirect));
+
+  if (isClientRequest && !isAuthorizeRequest) {
+    // A known client must name an allowlisted `redirect` callback. Without one there is no
+    // way to return the user, so refuse instead of silently stranding them on the Account
+    // Center with a plain sign-in.
+    return new NextResponse("Single Sign-On requires an allowlisted redirect callback", { status: 400 });
+  }
 
   if (!isAuthorizeRequest) {
     if (isAuthenticated) return NextResponse.redirect(createAppUrl(request, "/"));
@@ -58,7 +66,7 @@ const issueTicketAndHandoff = async ({ request, accessToken, redirect, queryDevi
   const headers = { Authorization: `Bearer ${accessToken}` };
   try {
     const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/sso/ticket`, { deviceId }, { headers });
-    return completeSsoHandoff(request, redirect, response.data.ticket);
+    return completeSsoHandoff(redirect, response.data.ticket);
   } catch (error) {
     const status = (error as { response?: { status?: number } }).response?.status;
     if (status === 401) return await refreshThenHandoff({ request, redirect, queryDeviceId });
@@ -95,7 +103,7 @@ const refreshThenHandoff = async ({
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
-    return completeSsoHandoff(request, redirect, retryResponse.data.ticket);
+    return completeSsoHandoff(redirect, retryResponse.data.ticket);
   } catch {
     await deleteSession();
     return redirectToSignin(request);
@@ -103,14 +111,11 @@ const refreshThenHandoff = async ({
 };
 
 /**
- * Persists the origin app on the session only once a ticket has actually been issued, and
- * marks the session as SSO-originated. An abandoned handshake must leave no link, otherwise
- * a later direct sign-in would resume SSO that the user never completed.
+ * A completed handshake hands the ticket straight back to the origin app. Origin state is
+ * never persisted on the session; logout decides its destination from a live returnTo.
  */
-const completeSsoHandoff = async (request: NextRequest, callbackUrl: string, ticket: string) => {
-  await updateSession({ ssoReturnTo: request.nextUrl.pathname + request.nextUrl.search, ssoOrigin: true });
-  return redirectToOriginApp(appendSsoTicket(callbackUrl, ticket));
-};
+const completeSsoHandoff = (callbackUrl: string, ticket: string) =>
+  redirectToOriginApp(appendSsoTicket(callbackUrl, ticket));
 
 const redirectToOriginApp = (callbackUrl: string) => {
   if (isWebCallback(callbackUrl)) {

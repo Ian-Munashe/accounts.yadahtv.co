@@ -58,17 +58,6 @@ export const shouldRedirectAuthenticatedGuest = (method: string, headers?: Heade
   return true;
 };
 
-/**
- * Logout only returns the user to an external app when the session was actually linked
- * to one by a completed SSO handshake (`ssoOrigin`). A `ssoReturnTo` without that marker
- * is stale — e.g. left by an abandoned handshake or an older build — and must not send
- * the user to a third-party callback.
- */
-export const destinationAfterLogout = (returnTo?: string | null, ssoOrigin?: boolean): string => {
-  if (!ssoOrigin || !returnTo) return "/signin";
-  return originCallbackFromReturnTo(returnTo) || "/signin";
-};
-
 const consumeAuthorizeDocument = async (url: string): Promise<void> => {
   const response = await fetch(url, {
     method: "GET",
@@ -113,6 +102,6 @@ export const resumeAfterAuth = async (returnTo?: string | null): Promise<void> =
   await consumeAuthorizeDocument(url);
 };
 
-export const resumeAfterLogout = (returnTo?: string | null, ssoOrigin?: boolean): void => {
-  window.location.href = destinationAfterLogout(returnTo, ssoOrigin);
+export const resumeAfterLogout = (destination: string): void => {
+  window.location.href = destination;
 };
