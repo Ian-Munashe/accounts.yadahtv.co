@@ -35,7 +35,7 @@ export const ProfileCard: React.FC = () => {
         <div className="mt-2 flex items-center justify-center gap-2">
           <Chip
             size="sm"
-            className={`lowercase ${roleClassMap[user?.role!] ?? "bg-purple-500/15 text-purple-700 dark:text-purple-400"}`}
+            className={`lowercase ${(user?.role && roleClassMap[user.role]) ?? "bg-purple-500/15 text-purple-700 dark:text-purple-400"}`}
           >
             {user?.role}
           </Chip>

@@ -2,7 +2,7 @@
 
 import { useFormik } from "formik";
 import { object, string } from "yup";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { LuArrowLeft, LuShieldCheck } from "react-icons/lu";
 import {
   Button,
@@ -19,8 +19,9 @@ import {
 } from "@heroui/react";
 
 import { mask } from "@/lib/mask";
-import { useOTPWaitState } from "@/stores";
+import { useOTPWait } from "@/hooks";
 import { useAxios } from "@/hooks/axios-hook";
+import { getErrorMessage } from "@/lib/error-message";
 
 interface Props {
   action: string;
@@ -34,9 +35,7 @@ interface Props {
 
 export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = false, ...props }) => {
   const { axios } = useAxios();
-  const { timer, startCountdown } = useOTPWaitState();
-
-  const waitTime = 120;
+  const { timer, isSyncing, beginCountdown } = useOTPWait();
 
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,8 +50,8 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
       try {
         const response = await axios.post("/otp/verify", values);
         await props.onSuccess(response.data.token);
-      } catch (error: any) {
-        toast.danger(error?.response?.data?.message ?? error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
       } finally {
         setIsSubmitting(false);
       }
@@ -60,27 +59,20 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
   });
 
   const handleResend = async () => {
-    if (timer < 1 && props.identifier && props.action) {
+    if (timer < 1 && !isSyncing && props.identifier && props.action) {
       try {
         setLoading(true);
         const response = await axios.post(`/otp/create`, { identifier: props.identifier, action: props.action });
         toast.success(response.data.message);
-        startCountdown(waitTime);
+        void beginCountdown();
         setValue("");
-      } catch (error: any) {
-        toast.danger(error?.response?.data?.message ?? error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
       } finally {
         setLoading(false);
       }
     }
   };
-
-  useEffect(() => {
-    if (timer > 0) {
-      const timeoutId = setTimeout(() => startCountdown(timer - 1), 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [timer]);
 
   return (
     <Surface
@@ -133,7 +125,11 @@ export const OTPForm: React.FC<Props> = ({ showFooter = true, isModalContext = f
             {timer > 0 ? null : loading ? (
               <Spinner size="sm" />
             ) : (
-              <Link onPress={handleResend} isDisabled={timer > 0} className="text-accent text-sm font-medium">
+              <Link
+                onPress={handleResend}
+                isDisabled={timer > 0 || isSyncing}
+                className="text-accent text-sm font-medium"
+              >
                 Resend code
               </Link>
             )}

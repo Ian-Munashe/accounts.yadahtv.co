@@ -23,7 +23,15 @@ const authorize = async (request: NextRequest) => {
   const { redirect, deviceId, clientId } = parseSsoAuthorizeParams(searchParams, getPublicOrigin(request));
   const session = await getSession();
   const isAuthenticated = Boolean(session.accessToken && session.refreshToken && session.user);
-  const isAuthorizeRequest = Boolean(redirect && isSsoClientId(clientId) && isAllowedSsoCallback(redirect));
+  const isClientRequest = isSsoClientId(clientId);
+  const isAuthorizeRequest = Boolean(redirect && isClientRequest && isAllowedSsoCallback(redirect));
+
+  if (isClientRequest && !isAuthorizeRequest) {
+    // A known client must name an allowlisted `redirect` callback. Without one there is no
+    // way to return the user, so refuse instead of silently stranding them on the Account
+    // Center with a plain sign-in.
+    return new NextResponse("Single Sign-On requires an allowlisted redirect callback", { status: 400 });
+  }
 
   if (!isAuthorizeRequest) {
     if (isAuthenticated) return NextResponse.redirect(createAppUrl(request, "/"));
@@ -58,10 +66,11 @@ const issueTicketAndHandoff = async ({ request, accessToken, redirect, queryDevi
   const headers = { Authorization: `Bearer ${accessToken}` };
   try {
     const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/sso/ticket`, { deviceId }, { headers });
-    return redirectToOriginApp(appendSsoTicket(redirect, response.data.ticket));
-  } catch (error: any) {
-    if (error.response?.status === 401) return await refreshThenHandoff({ request, redirect, queryDeviceId });
-    return new NextResponse("Single Sign-On handshake failed", { status: error.response?.status || 500 });
+    return completeSsoHandoff(redirect, response.data.ticket);
+  } catch (error) {
+    const status = (error as { response?: { status?: number } }).response?.status;
+    if (status === 401) return await refreshThenHandoff({ request, redirect, queryDeviceId });
+    return new NextResponse("Single Sign-On handshake failed", { status: status || 500 });
   }
 };
 
@@ -94,12 +103,19 @@ const refreshThenHandoff = async ({
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
-    return redirectToOriginApp(appendSsoTicket(redirect, retryResponse.data.ticket));
+    return completeSsoHandoff(redirect, retryResponse.data.ticket);
   } catch {
     await deleteSession();
     return redirectToSignin(request);
   }
 };
+
+/**
+ * A completed handshake hands the ticket straight back to the origin app. Origin state is
+ * never persisted on the session; logout decides its destination from a live returnTo.
+ */
+const completeSsoHandoff = (callbackUrl: string, ticket: string) =>
+  redirectToOriginApp(appendSsoTicket(callbackUrl, ticket));
 
 const redirectToOriginApp = (callbackUrl: string) => {
   if (isWebCallback(callbackUrl)) {
@@ -112,8 +128,7 @@ const redirectToOriginApp = (callbackUrl: string) => {
   });
 };
 
-const redirectToSignin = async (request: NextRequest) => {
-  await updateSession({ ssoReturnTo: request.nextUrl.pathname + request.nextUrl.search });
+const redirectToSignin = (request: NextRequest) => {
   const loginUrl = createAppUrl(request, "/signin");
   loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);

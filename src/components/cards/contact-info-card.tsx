@@ -5,6 +5,7 @@ import { MdOutlineAlternateEmail } from "react-icons/md";
 
 import { useAxios } from "@/hooks";
 import { NoData } from "../no-data";
+import { getErrorMessage } from "@/lib/error-message";
 import { useGlobalState, useModalState, useUserState } from "@/stores";
 
 enum Action {
@@ -26,7 +27,7 @@ export const ContactInfoCard: React.FC<Props> = (props) => {
 
   const contacts: string[] = user?.metadata?.contacts ?? [];
 
-  const renderModalInfo = (contact: string, action: string): Record<string, any> => {
+  const renderModalInfo = (contact: string, action: string): IModal => {
     switch (action) {
       case Action.CONTACT:
         return {
@@ -56,8 +57,8 @@ export const ContactInfoCard: React.FC<Props> = (props) => {
           await axios.post("/otp/create", payload);
           if (action === Action.SWAP) props.onSwapContact(contact);
           if (action === Action.CONTACT) props.onRemoveContact(contact);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message ?? error.message);
+        } catch (error) {
+          toast.danger(getErrorMessage(error));
         } finally {
           setIsProgress(false);
         }

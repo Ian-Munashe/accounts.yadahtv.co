@@ -186,7 +186,9 @@ describe("ssoCallbackHtml", () => {
 });
 
 describe("authorize route methods", () => {
-  test("POST is handled the same as GET so post-login resume is not 405", async () => {
+  // Importing a Next route pulls in next/server, next/headers and iron-session; the cold
+  // transform can exceed the 5s default when the suite runs concurrently.
+  test("POST is handled the same as GET so post-login resume is not 405", { timeout: 30000 }, async () => {
     const route = await import("@/app/(authentication)/sso/authorize/route");
     expect(route.POST).toBe(route.GET);
   });

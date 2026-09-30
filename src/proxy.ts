@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { getSession } from "./actions/session-action";
 import { createAppUrl } from "@/lib/request-url";
-import { ssoResumePath, ssoResumeTarget, shouldRedirectAuthenticatedGuest } from "@/lib/sso-return";
+import { ssoResumePath, shouldRedirectAuthenticatedGuest } from "@/lib/sso-return";
 
 const guestRoutes = ["/signin", "/join"];
 const superadminRoutes = ["/applications"];
@@ -19,8 +19,10 @@ export async function proxy(request: NextRequest) {
   const isGuestRoute = guestRoutes.some((route) => pathname.startsWith(route));
   if (isGuestRoute) {
     if (isAuthenticated && shouldRedirectAuthenticatedGuest(request.method, request.headers)) {
-      const resumeTo = ssoResumeTarget(request.nextUrl.searchParams.get("returnTo"), session.ssoReturnTo);
-      if (resumeTo) return NextResponse.redirect(createAppUrl(request, ssoResumePath(resumeTo)), 303);
+      // Only the live returnTo may start SSO. A session is never enough on its own,
+      // otherwise a stale handshake would keep bouncing the user to an external app.
+      const returnTo = request.nextUrl.searchParams.get("returnTo");
+      if (returnTo) return NextResponse.redirect(createAppUrl(request, ssoResumePath(returnTo)), 303);
       return NextResponse.redirect(createAppUrl(request, "/"), 303);
     }
     return NextResponse.next();

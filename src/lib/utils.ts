@@ -4,11 +4,10 @@ import { countries } from "@/countries";
 import { phoneCodes } from "@/phone-codes";
 
 export class Utils {
-  [x: string]: any;
   static instance = new Utils();
 
-  getValueByPath = (object: any, path: string) =>
-    path?.split(".").reduce((acc, key) => (acc == null ? acc : acc[key]), object);
+  getValueByPath = <T = unknown>(object: unknown, path: string): T =>
+    path?.split(".").reduce<unknown>((acc, key) => (acc == null ? acc : (acc as Record<string, unknown>)[key]), object) as T;
 
   /**
    * Returns an ISO 8601 datetime string representing a time offset in the future.

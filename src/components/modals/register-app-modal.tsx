@@ -5,13 +5,14 @@ import { LuAppWindow, LuGlobe, LuSmartphone, LuCode, LuMonitor } from "react-ico
 
 import { useAxios } from "@/hooks";
 import { TextArea, TextField } from "../inputs";
+import { getErrorMessage } from "@/lib/error-message";
 import { ApplicationValidationSchema } from "@/validations";
 
 interface Props {
   isOpen: boolean;
   application?: IApplication;
   onOpenChange?: (value: boolean) => void;
-  onEditSuccess: (value: any) => void;
+  onEditSuccess: (value: IApplication) => void;
   onSuccess: (value: IApplication) => void;
 }
 
@@ -53,11 +54,12 @@ export const RegisterAppModal: React.FC<Props> = (props) => {
         const response = isEditing
           ? await interceptor.put(`/applications/${props.application?._id}`, payload)
           : await interceptor.post("/applications/register", payload);
-        isEditing ? props.onEditSuccess(response.data.application) : props.onSuccess(response.data.application);
+        if (isEditing) props.onEditSuccess(response.data.application);
+        else props.onSuccess(response.data.application);
         props.onOpenChange?.(false);
         toast.success(response.data.message);
-      } catch (error: any) {
-        toast.danger(error.response?.data?.message || error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
       }
     },
   });

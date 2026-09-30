@@ -31,14 +31,23 @@ export const authPathWithReturnTo = (path: "/signin" | "/join", returnTo?: strin
 export const ssoResumePath = (returnTo: string): string =>
   isAuthorizePath(returnTo) ? returnTo : `/sso/authorize?redirect=${encodeURIComponent(returnTo)}`;
 
-export const ssoResumeTarget = (
-  returnToFromQuery?: string | null,
-  ssoReturnToFromSession?: string | null,
-): string | undefined => returnToFromQuery || ssoReturnToFromSession || undefined;
-
 export const destinationAfterAuth = (returnTo?: string | null): string => (returnTo ? ssoResumePath(returnTo) : "/");
 
 type HeaderReader = { get(name: string): string | null };
+
+/**
+ * True only when the browser is actually pointing at an app page.
+ *
+ * Server-action responses are dispatched from `/signin` (or the app root), not from
+ * the route the action is invoked on, so a token refresh that fails during sign-in
+ * must not be treated as "the user is already on an SSO page".
+ */
+export const isOnAppPage = (pathname: string): boolean => {
+  if (!pathname.startsWith("/") || pathname.startsWith("//")) return false;
+  if (/^\/(?:signin|join)(?:\/|$)/.test(pathname)) return false;
+  if (/^\/sso\/authorize(?:\/|$)/.test(pathname)) return false;
+  return !/\.(?:[a-z0-9]+)$/i.test(pathname);
+};
 
 /** Document GET only. POST (server actions) and RSC refreshes must not receive authorize HTML. */
 export const shouldRedirectAuthenticatedGuest = (method: string, headers?: HeaderReader): boolean => {
@@ -47,11 +56,6 @@ export const shouldRedirectAuthenticatedGuest = (method: string, headers?: Heade
   if (headers?.get("next-router-prefetch")) return false;
   if (headers?.get("next-action")) return false;
   return true;
-};
-
-export const destinationAfterLogout = (returnTo?: string | null): string => {
-  if (!returnTo) return "/signin";
-  return originCallbackFromReturnTo(returnTo) || "/signin";
 };
 
 const consumeAuthorizeDocument = async (url: string): Promise<void> => {
@@ -98,6 +102,6 @@ export const resumeAfterAuth = async (returnTo?: string | null): Promise<void> =
   await consumeAuthorizeDocument(url);
 };
 
-export const resumeAfterLogout = (returnTo?: string | null): void => {
-  window.location.href = destinationAfterLogout(returnTo);
+export const resumeAfterLogout = (destination: string): void => {
+  window.location.href = destination;
 };

@@ -3,8 +3,9 @@ import { default as axiosInstance, CreateAxiosDefaults, InternalAxiosRequestConf
 
 import { useDeviceInfoState } from "@/stores";
 import { deleteSession, getSession, updateSession } from "@/actions/session-action";
+import { isOnAppPage } from "@/lib/sso-return";
 
-let isRefreshingToken: Promise<any> | null = null;
+let isRefreshingToken: Promise<string> | null = null;
 
 const isSignoutRequest = (config?: InternalAxiosRequestConfig) =>
   typeof config?.url === "string" && config.url.includes("/user/signout");
@@ -13,7 +14,7 @@ export const useAxios = () => {
   const deviceInfo = useDeviceInfoState();
   const { model, platform, deviceId, clientId, operatingSystem } = deviceInfo;
 
-  const [axiosInstances, _] = useState(() => {
+  const [axiosInstances] = useState(() => {
     const options: CreateAxiosDefaults = {
       baseURL: process.env.NEXT_PUBLIC_API_URL,
       headers: { "Content-Type": "application/json", "X-Client-Id": clientId },
@@ -36,12 +37,20 @@ export const useAxios = () => {
     };
 
     const filteredHeaders: Record<string, string> = Object.fromEntries(
-      Object.entries(headers).filter(([_, v]) => typeof v === "string" && v !== undefined) as [string, string][],
+      Object.entries(headers).filter(([, v]) => typeof v === "string" && v !== undefined) as [string, string][],
     );
 
     Object.assign(axiosInstances.axios.defaults.headers.common, filteredHeaders);
     Object.assign(axiosInstances.interceptor.defaults.headers.common, filteredHeaders);
-  }, [platform, model, deviceId, operatingSystem]);
+  }, [
+    platform,
+    model,
+    deviceId,
+    operatingSystem,
+    clientId,
+    axiosInstances.axios.defaults.headers.common,
+    axiosInstances.interceptor.defaults.headers.common,
+  ]);
 
   const { axios, interceptor, cancelToken } = axiosInstances;
 
@@ -63,10 +72,15 @@ export const useAxios = () => {
         const newAccessToken = await isRefreshingToken;
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return await interceptor(originalRequest);
-      } catch (error: any) {
+      } catch (error) {
         await deleteSession();
         const returnTo = window.location.pathname + window.location.search;
-        window.location.href = `/signin?returnTo=${encodeURIComponent(returnTo)}`;
+        // A failed refresh during a sign-in/join server action is dispatched from
+        // /signin, where window.location is the POST target rather than the page the
+        // user is on. Only redirect when the browser is really on an app page.
+        if (isOnAppPage(window.location.pathname) && !returnTo.startsWith("/signin")) {
+          window.location.href = `/signin?returnTo=${encodeURIComponent(returnTo)}`;
+        }
         return Promise.reject(error);
       } finally {
         isRefreshingToken = null;

@@ -2,13 +2,13 @@
 
 import { useAsyncList } from "@react-stately/data";
 import { Collection, ListBoxLoadMoreItem } from "react-aria-components";
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { Avatar, Select, Label, Key, ListBox, FieldError, Spinner } from "@heroui/react";
 
 import { Utils } from "@/lib/utils";
 
 interface SelectInputProps {
-  formik: any;
+  formik: IFormikInput;
   name: string;
   label: string;
   network?: string;
@@ -27,9 +27,9 @@ export const SelectInput: React.FC<SelectInputProps> = ({
   ...props
 }) => {
   const API_URL = String(process.env.NEXT_PUBLIC_API_URL);
-  const formikValue = Utils.instance.getValueByPath(props.formik?.values, props.name);
+  const formikValue = Utils.instance.getValueByPath<Key | Key[] | undefined>(props.formik?.values, props.name);
+  const selected = selectionMode === "multiple" ? (Array.isArray(formikValue) ? formikValue : []) : formikValue;
 
-  const [selected, setSelected] = useState<Key[] | Key>();
   const [result, setResult] = useState({ page: 1, totalPages: 1 });
 
   const list = useAsyncList<ISelectOption>({
@@ -37,8 +37,9 @@ export const SelectInput: React.FC<SelectInputProps> = ({
       if (!props.options && props.network) {
         const url = cursor || `${API_URL}${props.network}?page=${result.page}`;
         const response = await fetch(url, { signal });
-        const json = await response.json();
-        const mapped: ISelectOption[] = json.results.map((item: any) => ({
+        const json: { results: { name: string; _id: string }[]; page: number; totalPages: number } =
+          await response.json();
+        const mapped: ISelectOption[] = json.results.map((item) => ({
           label: item.name,
           value: item._id,
         }));
@@ -49,22 +50,16 @@ export const SelectInput: React.FC<SelectInputProps> = ({
     },
   });
 
-  const meta = useMemo(() => {
-    const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
-    const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
-    return {
-      error,
-      touched,
-      errorMessage: typeof error === "string" ? error : undefined,
-    };
-  }, [props.formik?.errors, props.formik?.touched, props.name]);
+  const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
+  const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
+  const meta = {
+    error,
+    touched,
+    errorMessage: typeof error === "string" ? error : undefined,
+  };
 
   const selectRef = useRef<HTMLDivElement>(null);
   const hasError = Boolean(meta.error && (meta.touched || props.formik?.submitCount > 0));
-
-  useEffect(() => {
-    setSelected(selectionMode === "multiple" ? (Array.isArray(formikValue) ? formikValue : []) : formikValue);
-  }, [formikValue, selectionMode]);
 
   useLayoutEffect(() => {
     if (!props.options && !props.network) {
@@ -86,7 +81,6 @@ export const SelectInput: React.FC<SelectInputProps> = ({
         placeholder={props.placeholder}
         aria-label={props.label}
         onChange={(keys) => {
-          setSelected(keys as any);
           props.formik.setFieldValue(props.name, keys);
         }}
       >

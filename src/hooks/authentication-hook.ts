@@ -2,8 +2,10 @@ import { toast } from "@heroui/react";
 
 import { useAxios } from "./axios-hook";
 import { useGlobalState, useModalState, useUserState } from "@/stores";
-import { deleteSession, getSession, updateSession } from "@/actions/session-action";
+import { deleteSession, updateSession } from "@/actions/session-action";
+import { resolveLogoutDestination } from "@/actions/logout-action";
 import { resumeAfterLogout } from "@/lib/sso-return";
+import { getErrorMessage } from "@/lib/error-message";
 
 export const useAuthentication = () => {
   const { interceptor } = useAxios();
@@ -19,17 +21,24 @@ export const useAuthentication = () => {
       onConfirm: async () => {
         setIsProgress(true);
         try {
-          const session = await getSession();
-          const ssoReturnTo = session.ssoReturnTo;
+          // Logout returns to an origin app only when that app asked for it with a live
+          // returnTo; otherwise the user lands on this app's own sign-in page.
+          let destination = "/signin";
+          try {
+            const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+            destination = await resolveLogoutDestination(returnTo);
+          } catch {
+            // A resolver failure must not block logout.
+          }
           try {
             await interceptor.get("/user/signout");
           } catch {
             // Local logout and origin redirect still proceed if the API call fails.
           }
           await deleteSession();
-          resumeAfterLogout(ssoReturnTo);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message || error.message);
+          resumeAfterLogout(destination);
+        } catch (error) {
+          toast.danger(getErrorMessage(error));
         } finally {
           setIsProgress(false);
         }
@@ -43,8 +52,8 @@ export const useAuthentication = () => {
       await updateSession({ user });
       setUser(user);
       return true;
-    } catch (error: any) {
-      toast.danger(error.response?.data?.message || error.message);
+    } catch (error) {
+      toast.danger(getErrorMessage(error));
       return false;
     }
   };
