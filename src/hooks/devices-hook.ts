@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useAxios } from "./axios-hook";
 import { useModalState } from "@/stores";
+import { getErrorMessage } from "@/lib/error-message";
 
 export const useDevices = () => {
   const { interceptor } = useAxios();
@@ -28,8 +29,8 @@ export const useDevices = () => {
             return devices.filter((d) => d._id !== _id);
           });
           toast.success(response.data.message);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message || error.message);
+        } catch (error) {
+          toast.danger(getErrorMessage(error));
         } finally {
           setRemoveId(undefined);
         }
@@ -52,8 +53,8 @@ export const useDevices = () => {
             return devices.map((d) => (d._id === _id ? { ...d, loggedIn: false } : d));
           });
           toast.success(response.data.message);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message || error.message);
+        } catch (error) {
+          toast.danger(getErrorMessage(error));
         } finally {
           setSignId(undefined);
         }

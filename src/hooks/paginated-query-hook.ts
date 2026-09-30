@@ -19,10 +19,10 @@ export interface PaginatedParams {
   search?: string;
   filters?: string[];
   enabled?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
-export function usePaginatedQuery<T = any>(queryKeyPrefix: string, endpoint: string, params: PaginatedParams = {}) {
+export function usePaginatedQuery<T = unknown>(queryKeyPrefix: string, endpoint: string, params: PaginatedParams = {}) {
   const { interceptor } = useAxios();
   const { page = 1, search = "", filters = [], enabled = true, ...extraParams } = params;
 

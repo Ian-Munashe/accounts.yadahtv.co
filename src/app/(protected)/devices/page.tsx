@@ -9,6 +9,7 @@ import { NoData } from "@/components/no-data";
 import { useAxios, useDevices } from "@/hooks";
 import { DeviceCard } from "@/components/cards";
 import { BreadCrumb } from "@/components/bread-crumb";
+import { getErrorMessage } from "@/lib/error-message";
 
 export default function DevicesPage() {
   const { interceptor } = useAxios();
@@ -25,8 +26,8 @@ export default function DevicesPage() {
       try {
         const response = await interceptor.get("/devices");
         return response.data;
-      } catch (error: any) {
-        toast.danger(error.response?.data?.message || error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
         throw error;
       }
     },

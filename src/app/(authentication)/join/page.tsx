@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Description, Separator } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { StepPill } from "@/components/step-pill";
 import { stepFadeAnimation } from "@/lib/animations";
-import { updateSession } from "@/actions/session-action";
 import { authPathWithReturnTo } from "@/lib/sso-return";
 import { AccountRegistrationForm, OTPForm, RequestCodeForm } from "@/components/forms";
 
@@ -26,11 +25,6 @@ export default function SignIn() {
   const [identifier, setIdentifier] = useState<string>("");
   const [step, setStep] = useState<Steps>(Steps.CONTACT);
 
-  useEffect(() => {
-    if (!returnTo) return;
-    void updateSession({ ssoReturnTo: returnTo }).catch(() => {});
-  }, [returnTo]);
-
   const steps: Steps[] = [Steps.CONTACT, Steps.VERIFY, Steps.COMPLETE];
   const stepIndex = steps.findIndex((i) => i === step);
   const header = (
@@ -39,7 +33,8 @@ export default function SignIn() {
         Create your account
       </h1>
       <Description>
-        Enter the email address or phone number you want to use for your account, and we'll send you a one-time code.
+        Enter the email address or phone number you want to use for your account, and we&apos;ll send you a one-time
+        code.
       </Description>
     </header>
   );

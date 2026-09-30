@@ -1,13 +1,13 @@
 "use client";
 
 import { LuEye, LuEyeOff } from "react-icons/lu";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { InputGroup, Label, FieldError, TextField as HText } from "@heroui/react";
 
 import { Utils } from "@/lib/utils";
 
 interface Props {
-  formik: any;
+  formik: IFormikInput;
   name: string;
   label: string;
   placeholder?: string;
@@ -26,17 +26,18 @@ export const TextField: React.FC<Props> = ({ isRequired = true, isDisabled = fal
   const [showPassword, setShowPassword] = useState(false);
   const inputType = props.type === "password" ? (showPassword ? "text" : "password") : props.type;
 
-  const meta = useMemo(() => {
-    const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
-    const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
-    return {
-      error,
-      touched,
-      errorMessage: typeof error === "string" ? error : undefined,
-    };
-  }, [props.formik?.errors, props.formik?.touched, props.name]);
+  const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
+  const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
+  const meta = {
+    error,
+    touched,
+    errorMessage: typeof error === "string" ? error : undefined,
+  };
 
-  const value = Utils.instance.getValueByPath(props.formik?.values, props.name);
+  const value = Utils.instance.getValueByPath<string | number | readonly string[] | undefined>(
+    props.formik?.values,
+    props.name,
+  );
   const hasError = Boolean(meta.error && (meta.touched || props.formik?.submitCount > 0));
 
   return (

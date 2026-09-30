@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useAsyncList } from "@react-stately/data";
 import { ListBoxLoadMoreItem } from "react-aria-components";
 import {
@@ -21,7 +21,7 @@ import {
 import { Utils } from "@/lib/utils";
 
 interface Props {
-  formik: any;
+  formik: IFormikInput;
   name: string;
   label: string;
   network?: string;
@@ -37,7 +37,7 @@ export const AutocompleteInput: React.FC<Props> = ({ isRequired = true, selectio
   const API_URL = String(process.env.NEXT_PUBLIC_API_URL);
   const { contains } = useFilter({ sensitivity: "base" });
 
-  const formikValue = Utils.instance.getValueByPath(props.formik?.values, props.name);
+  const formikValue = Utils.instance.getValueByPath<Key | Key[] | undefined>(props.formik?.values, props.name);
   const initialSelected = formikValue
     ? selectionMode === "multiple"
       ? Array.isArray(formikValue)
@@ -56,28 +56,18 @@ export const AutocompleteInput: React.FC<Props> = ({ isRequired = true, selectio
 
   const [result, setResult] = useState({ page: 1, totalPages: 1 });
   const [selectedKeys, setSelectedKeys] = useState<Key[] | Key>(initialSelected);
+  const [prevFormikValue, setPrevFormikValue] = useState(formikValue);
+  const [prevDefaultSelected, setPrevDefaultSelected] = useState(props.defaultSelected);
+  const [prevSelectionMode, setPrevSelectionMode] = useState(selectionMode);
 
-  const onRemoveTags = (keys: Set<Key>) =>
-    setSelectedKeys((prev) => (Array.isArray(prev) ? prev.filter((key) => !keys.has(key)) : prev));
-
-  const list = useAsyncList<ISelectOption>({
-    async load({ cursor, signal }) {
-      if (props.options && props.network) {
-        const url = cursor || `${API_URL}${props.network}?page=${result.page}`;
-        const response = await fetch(url, { signal });
-        const json = await response.json();
-        const mapped: ISelectOption[] = json.results.map((item: any) => ({
-          label: item.name,
-          value: item._id,
-        }));
-        if (json.page < json.totalPages) setResult((prev) => ({ ...prev, page: prev.page + 1 }));
-        return { cursor: `${API_URL}${props.network}?page=${result.page}`, items: mapped };
-      }
-      return { items: props.options || [], cursor: undefined };
-    },
-  });
-
-  React.useEffect(() => {
+  if (
+    formikValue !== prevFormikValue ||
+    props.defaultSelected !== prevDefaultSelected ||
+    selectionMode !== prevSelectionMode
+  ) {
+    setPrevFormikValue(formikValue);
+    setPrevDefaultSelected(props.defaultSelected);
+    setPrevSelectionMode(selectionMode);
     if (formikValue !== undefined && formikValue !== null) {
       setSelectedKeys(selectionMode === "multiple" ? (Array.isArray(formikValue) ? formikValue : []) : formikValue);
     } else if (props.defaultSelected !== undefined) {
@@ -89,17 +79,36 @@ export const AutocompleteInput: React.FC<Props> = ({ isRequired = true, selectio
           : props.defaultSelected,
       );
     }
-  }, [formikValue, props.defaultSelected, selectionMode]);
+  }
 
-  const meta = useMemo(() => {
-    const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
-    const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
-    return {
-      error,
-      touched,
-      errorMessage: typeof error === "string" ? error : undefined,
-    };
-  }, [props.formik?.errors, props.formik?.touched, props.name]);
+  const onRemoveTags = (keys: Set<Key>) =>
+    setSelectedKeys((prev) => (Array.isArray(prev) ? prev.filter((key) => !keys.has(key)) : prev));
+
+  const list = useAsyncList<ISelectOption>({
+    async load({ cursor, signal }) {
+      if (props.options && props.network) {
+        const url = cursor || `${API_URL}${props.network}?page=${result.page}`;
+        const response = await fetch(url, { signal });
+        const json: { results: { name: string; _id: string }[]; page: number; totalPages: number } =
+          await response.json();
+        const mapped: ISelectOption[] = json.results.map((item) => ({
+          label: item.name,
+          value: item._id,
+        }));
+        if (json.page < json.totalPages) setResult((prev) => ({ ...prev, page: prev.page + 1 }));
+        return { cursor: `${API_URL}${props.network}?page=${result.page}`, items: mapped };
+      }
+      return { items: props.options || [], cursor: undefined };
+    },
+  });
+
+  const error = Utils.instance.getValueByPath(props.formik?.errors, props.name);
+  const touched = Utils.instance.getValueByPath(props.formik?.touched, props.name);
+  const meta = {
+    error,
+    touched,
+    errorMessage: typeof error === "string" ? error : undefined,
+  };
 
   const hasError = Boolean(meta.error && (meta.touched || props.formik?.submitCount > 0));
 
@@ -113,7 +122,7 @@ export const AutocompleteInput: React.FC<Props> = ({ isRequired = true, selectio
       selectionMode={selectionMode}
       value={selectedKeys}
       variant="secondary"
-      validate={meta.error}
+      validate={meta.error as React.ComponentProps<typeof Autocomplete>["validate"]}
       aria-label={props.label}
       onChange={(keys: Key | Key[] | null) => {
         setSelectedKeys(keys as Key[]);
@@ -124,9 +133,9 @@ export const AutocompleteInput: React.FC<Props> = ({ isRequired = true, selectio
       <Autocomplete.Trigger className="flex items-center">
         {props.prefix}
         <Autocomplete.Value>
-          {({ defaultChildren, isPlaceholder, state }: any) => {
+          {({ defaultChildren, isPlaceholder, state }) => {
             if (isPlaceholder || state.selectedItems.length === 0) return defaultChildren;
-            const selectedItemsKeys = state.selectedItems.map((item: any) => item.key);
+            const selectedItemsKeys = state.selectedItems.map((item) => item.key);
             return (
               <TagGroup size="sm" onRemove={onRemoveTags}>
                 <TagGroup.List>

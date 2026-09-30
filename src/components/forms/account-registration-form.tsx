@@ -9,8 +9,10 @@ import { useAxios } from "@/hooks/axios-hook";
 import { useAuthentication } from "@/hooks";
 import { genderOptions } from "@/gender-options";
 import { RegisterValidationSchema } from "@/validations";
-import { getSession, updateSession } from "@/actions/session-action";
-import { authPathWithReturnTo, resumeAfterAuth, ssoResumeTarget } from "@/lib/sso-return";
+import { getErrorMessage } from "@/lib/error-message";
+import { updateSession } from "@/actions/session-action";
+import { authPathWithReturnTo, resumeAfterAuth } from "@/lib/sso-return";
+import { useOTPWaitState } from "@/stores";
 import { AutocompleteInput, SelectInput, TextField } from "../inputs";
 
 interface Props {
@@ -34,11 +36,11 @@ export const AccountRegistrationForm: React.FC<Props> = (props) => {
         await updateSession({ accessToken, refreshToken });
         const isSuccess = await getUser();
         if (isSuccess) {
-          const session = await getSession();
-          await resumeAfterAuth(ssoResumeTarget(props.returnTo, session.ssoReturnTo));
+          useOTPWaitState.getState().cancel();
+          await resumeAfterAuth(props.returnTo);
         }
-      } catch (error: any) {
-        toast.danger(error.response?.data?.message || error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
       }
     },
   });

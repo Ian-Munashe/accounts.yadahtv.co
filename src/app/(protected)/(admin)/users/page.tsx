@@ -10,7 +10,7 @@ import { UserCard } from "@/components/cards";
 import { NoData } from "@/components/no-data";
 import { EditUserModal } from "@/components/modals";
 import { Pagination } from "@/components/pagination";
-import { useAxios, usePaginatedQuery } from "@/hooks";
+import { usePaginatedQuery, PaginatedResponse } from "@/hooks";
 import { BreadCrumb } from "@/components/bread-crumb";
 import { PermissionsDrawer } from "@/components/drawers";
 
@@ -23,7 +23,6 @@ const roles: ISelectOption[] = [
 
 export default function Admin() {
   const queryClient = useQueryClient();
-  const { interceptor } = useAxios();
   const { page, setPage, search, setSearch } = useUsersListState();
 
   const [selectedUser, setSelectedUser] = useState<IUser | undefined>();
@@ -43,12 +42,15 @@ export default function Admin() {
   };
 
   const handleUserUpdateSuccess = (updatedUser: IUser) => {
-    queryClient.setQueriesData({ queryKey: ["users"] }, (oldData: any) => {
+    queryClient.setQueriesData({ queryKey: ["users"] }, (oldData: unknown) => {
       if (!oldData) return oldData;
-      if (Array.isArray(oldData)) return oldData.map((u) => (u._id === updatedUser._id ? updatedUser : u));
+      if (Array.isArray(oldData)) {
+        return (oldData as IUser[]).map((u) => (u._id === updatedUser._id ? updatedUser : u));
+      }
+      const paged = oldData as PaginatedResponse<IUser>;
       return {
-        ...oldData,
-        results: oldData.results?.map((u: IUser) => (u._id === updatedUser._id ? updatedUser : u)),
+        ...paged,
+        results: paged.results?.map((u) => (u._id === updatedUser._id ? updatedUser : u)),
       };
     });
     setSelectedUser(updatedUser);
@@ -74,7 +76,7 @@ export default function Admin() {
             type="search"
             placeholder="Search users..."
             value={search}
-            onChange={(e) => setSearch(e.target.value, interceptor, "/admin/users")}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </InputGroup>
       </BreadCrumb>
@@ -131,7 +133,7 @@ export default function Admin() {
           permissions={selectedUser.permissions}
           isOpen={permissionsDrawerOpen}
           onOpenChange={setPermissionsDrawerOpen}
-          onSave={(permissions) => setSelectedUser((prev: any) => ({ ...prev, permissions }))}
+          onSave={(permissions) => setSelectedUser((prev) => (prev ? { ...prev, permissions } : prev))}
         />
       )}
     </div>

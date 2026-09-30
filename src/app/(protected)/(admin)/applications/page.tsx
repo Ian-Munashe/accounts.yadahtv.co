@@ -10,6 +10,7 @@ import { NoData } from "@/components/no-data";
 import { ApplicationCard } from "@/components/cards";
 import { BreadCrumb } from "@/components/bread-crumb";
 import { RegisterAppModal } from "@/components/modals";
+import { getErrorMessage } from "@/lib/error-message";
 import { useGlobalState, useModalState } from "@/stores";
 
 export default function ApplicationsPage() {
@@ -34,8 +35,8 @@ export default function ApplicationsPage() {
           const response = await interceptor.delete(`/applications/${_id}`);
           queryClient.setQueryData<IApplication[]>(["applications"], (app = []) => app.filter((i) => i._id !== _id));
           toast.success(response.data.message);
-        } catch (error: any) {
-          toast.danger(error.response?.data?.message || error.message);
+        } catch (error) {
+          toast.danger(getErrorMessage(error));
         } finally {
           setDeletingApplicationId(undefined);
         }
@@ -53,8 +54,8 @@ export default function ApplicationsPage() {
       try {
         const response = await interceptor.get("/applications");
         return response.data;
-      } catch (error: any) {
-        toast.danger(error.response?.data?.message || error.message);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
         throw error;
       }
     },

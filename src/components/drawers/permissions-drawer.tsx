@@ -1,5 +1,5 @@
 import { LuShieldAlert } from "react-icons/lu";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Accordion, Button, Checkbox, Chip, cn, Description, Drawer, Separator } from "@heroui/react";
 
 import { permissions } from "@/permissions";
@@ -12,10 +12,12 @@ interface Props {
 }
 
 export const PermissionsDrawer: React.FC<Props> = (props) => {
-  const [selected, setSelected] = useState<string[]>(props.permissions);
+  const [draft, setDraft] = useState<string[] | null>(null);
+  const selected = draft ?? props.permissions;
 
   const handleTogglePermission = (permission: string, categoryPermissions: ISelectOption[], exclusive?: boolean) => {
-    setSelected((prev) => {
+    setDraft((prevDraft) => {
+      const prev = prevDraft ?? props.permissions;
       if (prev.includes(permission)) return prev.filter((p) => p !== permission);
 
       const categoryValues = new Set(categoryPermissions.map((p) => p.value));
@@ -26,15 +28,17 @@ export const PermissionsDrawer: React.FC<Props> = (props) => {
 
   const handleSave = () => {
     props.onSave?.(selected);
+    setDraft(null);
     props.onOpenChange(false);
   };
 
-  useEffect(() => {
-    if (props.isOpen) setSelected(props.permissions);
-  }, [props.isOpen, props.permissions]);
+  const handleOpenChange = (value: boolean) => {
+    if (!value) setDraft(null);
+    props.onOpenChange(value);
+  };
 
   return (
-    <Drawer isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
+    <Drawer isOpen={props.isOpen} onOpenChange={handleOpenChange}>
       <Drawer.Backdrop className="z-9999">
         <Drawer.Content placement="right">
           <Drawer.Dialog>
@@ -57,7 +61,7 @@ export const PermissionsDrawer: React.FC<Props> = (props) => {
                   size="sm"
                   variant="ghost"
                   className={cn("text-accent invisible text-xs", { visible: selected.length > 0 })}
-                  onPress={() => setSelected([])}
+                  onPress={() => setDraft([])}
                 >
                   Clear All
                 </Button>

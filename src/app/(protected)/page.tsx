@@ -5,6 +5,7 @@ import { Fragment, useState } from "react";
 
 import { useAxios } from "@/hooks";
 import { BreadCrumb } from "@/components/bread-crumb";
+import { getErrorMessage } from "@/lib/error-message";
 import { useGlobalState, useUserState } from "@/stores";
 import { updateSession } from "@/actions/session-action";
 import { AddContactModal, VerifyOTPModal } from "@/components/modals";
@@ -61,8 +62,8 @@ export default function ProfilePage() {
       await updateSession({ user: newUser });
       setUser(newUser);
       toast.success(config.successMessage);
-    } catch (error: any) {
-      toast.danger(error.response?.data?.message || error.message);
+    } catch (error) {
+      toast.danger(getErrorMessage(error));
     } finally {
       setIsProgress(false);
     }

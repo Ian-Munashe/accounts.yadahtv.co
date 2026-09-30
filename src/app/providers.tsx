@@ -26,13 +26,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const [_, session] = await Promise.all([getDeviceInfo(), getSession()]);
+        const [, session] = await Promise.all([getDeviceInfo(), getSession()]);
         if (session && session.user) setUser(session.user);
       } finally {
         setIsLoading(false);
       }
     })();
-  }, []);
+  }, [getDeviceInfo, setUser]);
 
   if (isLoading) return <Preloader />;
 

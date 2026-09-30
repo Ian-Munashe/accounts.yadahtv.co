@@ -7,6 +7,7 @@ import { useAxios } from "@/hooks";
 import { NoData } from "../no-data";
 import { Utils } from "@/lib/utils";
 import { permissions } from "@/permissions";
+import { getErrorMessage } from "@/lib/error-message";
 
 const ALL_STATUSES: IUser["status"][] = ["active", "suspended"];
 const ALL_ROLES: IUser["role"][] = ["superadmin", "admin", "user"];
@@ -37,8 +38,8 @@ export const EditUserModal: React.FC<Props> = (props) => {
         props.onUpdateSuccess(response.data);
         props.onOpenChange(false);
         toast.success("User account has been updated");
-      } catch (error: any) {
-        toast.danger(error.response?.data?.message || error.manage);
+      } catch (error) {
+        toast.danger(getErrorMessage(error));
       }
     },
   });

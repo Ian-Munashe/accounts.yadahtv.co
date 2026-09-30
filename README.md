@@ -34,11 +34,11 @@ Hand the client AI [`DOC_SSO.md`](./DOC_SSO.md), then the Auth API `DOC_SSO.md` 
 | After | SSO authorize in progress | Direct Accounts visit |
 |-------|---------------------------|------------------------|
 | Sign in or create account | Resume `/sso/authorize` → origin `?t=` | `/` |
-| Log out | Origin callback with no `t` | `/signin` |
+| Log out | `/signin` (origin callback only when the triggering URL carries a live `returnTo`) | `/signin` |
 
-Create Account, Sign In, and Use a different contact keep `returnTo` on the URL. Path helpers live in `src/lib/sso-return.ts`.
+Create Account, Sign In, and Use a different contact keep `returnTo` on the URL. Path helpers live in `src/lib/sso-return.ts`. A recognized client (`clientId`) must send an allowlisted `redirect` callback; `/sso/authorize` refuses (400) a client request without one.
 
-Authenticated means access token, refresh token, **and** user are all present. `ssoReturnTo` alone is not a login. Route gates are in `src/proxy.ts`.
+Authenticated means access token, refresh token, **and** user are all present. Route gates are in `src/proxy.ts`.
 
 ## Tech stack
 

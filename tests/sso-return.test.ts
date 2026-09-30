@@ -3,11 +3,11 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   authPathWithReturnTo,
   destinationAfterAuth,
-  destinationAfterLogout,
+  isOnAppPage,
+  originCallbackFromReturnTo,
   resumeAfterAuth,
   shouldRedirectAuthenticatedGuest,
   ssoResumePath,
-  ssoResumeTarget,
 } from "@/lib/sso-return";
 
 const returnTo = "/sso/authorize?redirect=https://app.example/cb&deviceId=d1&clientId=c1";
@@ -33,20 +33,6 @@ describe("ssoResumePath", () => {
   });
 });
 
-describe("ssoResumeTarget", () => {
-  test("prefers the query value over the session value", () => {
-    expect(ssoResumeTarget(returnTo, "/sso/authorize?redirect=other")).toBe(returnTo);
-  });
-
-  test("falls back to the session value", () => {
-    expect(ssoResumeTarget(null, returnTo)).toBe(returnTo);
-  });
-
-  test("returns undefined when neither is set", () => {
-    expect(ssoResumeTarget(null, undefined)).toBeUndefined();
-  });
-});
-
 describe("destinationAfterAuth", () => {
   test("resumes SSO when returnTo is set", () => {
     expect(destinationAfterAuth(returnTo)).toBe(ssoResumePath(returnTo));
@@ -57,25 +43,24 @@ describe("destinationAfterAuth", () => {
   });
 });
 
-describe("destinationAfterLogout", () => {
+describe("originCallbackFromReturnTo", () => {
   const nativeReturnTo =
     "/sso/authorize?deviceId=SM-M326B-977d93d4b817243e&clientId=yb&redirect=yb%3A%2F%2Fsso%2Fcallback";
 
-  test("sends the user to the origin app callback", () => {
-    expect(destinationAfterLogout(nativeReturnTo)).toBe("yb://sso/callback");
+  test("unwraps the origin callback from an authorize returnTo", () => {
+    expect(originCallbackFromReturnTo(returnTo)).toBe("https://app.example/cb");
+    expect(originCallbackFromReturnTo(nativeReturnTo)).toBe("yb://sso/callback");
   });
 
   test("unwraps a double-wrapped authorize returnTo", () => {
     const nested = `/sso/authorize?redirect=${encodeURIComponent(nativeReturnTo)}`;
-    expect(destinationAfterLogout(nested)).toBe("yb://sso/callback");
+    expect(originCallbackFromReturnTo(nested)).toBe("yb://sso/callback");
   });
 
-  test("uses an https origin callback", () => {
-    expect(destinationAfterLogout(returnTo)).toBe("https://app.example/cb");
-  });
-
-  test("goes to sign-in when returnTo is missing", () => {
-    expect(destinationAfterLogout(undefined)).toBe("/signin");
+  test("returns undefined when the value carries no redirect callback", () => {
+    expect(originCallbackFromReturnTo("/sso/authorize?clientId=yb")).toBeUndefined();
+    expect(originCallbackFromReturnTo("")).toBeUndefined();
+    expect(originCallbackFromReturnTo("https://app.example/cb")).toBeUndefined();
   });
 });
 
@@ -91,6 +76,29 @@ describe("shouldRedirectAuthenticatedGuest", () => {
   test("does not redirect an RSC refresh so authorize HTML is not parsed as a Next payload", () => {
     const headers = { get: (name: string) => (name.toLowerCase() === "rsc" ? "1" : null) };
     expect(shouldRedirectAuthenticatedGuest("GET", headers)).toBe(false);
+  });
+});
+
+describe("isOnAppPage", () => {
+  test("treats protected app pages as real pages", () => {
+    expect(isOnAppPage("/")).toBe(true);
+    expect(isOnAppPage("/profile")).toBe(true);
+    expect(isOnAppPage("/users")).toBe(true);
+  });
+
+  test("excludes auth pages, the approve handoff route, and asset paths", () => {
+    expect(isOnAppPage("/signin")).toBe(false);
+    expect(isOnAppPage("/join")).toBe(false);
+    expect(isOnAppPage("/sso/authorize")).toBe(false);
+    expect(isOnAppPage("/sso/authorize/anything")).toBe(false);
+    expect(isOnAppPage("/_next/static/chunks/main.js")).toBe(false);
+    expect(isOnAppPage("/fonts/Inter.woff2")).toBe(false);
+  });
+
+  test("rejects values that are not same-origin paths", () => {
+    expect(isOnAppPage("//evil.example/cb")).toBe(false);
+    expect(isOnAppPage("https://evil.example/steal")).toBe(false);
+    expect(isOnAppPage("")).toBe(false);
   });
 });
 

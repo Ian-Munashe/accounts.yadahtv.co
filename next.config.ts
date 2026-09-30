@@ -234,10 +234,10 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   output: "standalone",
   turbopack: {},
-  allowedDevOrigins: ["10.10.1.2", "10.10.1.5"],
+  allowedDevOrigins: ["localhost"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
 };
 
-export default withPWA(nextConfig as any);
+export default withPWA(nextConfig as unknown as Parameters<typeof withPWA>[0]);
