@@ -1,21 +1,18 @@
 {
   "name": "accounts.yadahtv.co",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
-  "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build --webpack",
     "start": "node .next/standalone/server.js -p 3001",
-    "lint": "eslint",
-    "test": "vitest run"
+    "lint": "eslint"
   },
   "dependencies": {
     "@capacitor/core": "^8.4.1",
     "@capacitor/device": "^8.0.2",
-    "@heroui/react": "^3.2.2",
-    "@heroui/styles": "^3.2.2",
-    "@react-aria/i18n": "^3.13.1",
+    "@heroui/react": "^3.2.6",
+    "@heroui/styles": "^3.2.6",
     "@react-aria/ssr": "^3.10.1",
     "@react-aria/utils": "^3.34.1",
     "@react-stately/data": "^3.16.1",
@@ -30,8 +27,6 @@
     "next-pwa": "^5.6.0",
     "next-themes": "^0.4.6",
     "react": "19.2.4",
-    "react-aria": "^3.52.0",
-    "react-aria-components": "^1.21.0",
     "react-dom": "19.2.4",
     "react-icons": "^5.7.0",
     "yup": "^1.7.1",
@@ -39,7 +34,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/minimatch": "^6.0.0",
+    "@types/minimatch": "5.1.2",
     "@types/next-pwa": "^5.6.9",
     "@types/node": "^20",
     "@types/react": "^19",
