@@ -1,5 +1,7 @@
-import { LuShieldAlert } from "react-icons/lu";
+"use client";
+
 import React, { useState } from "react";
+import { LuShieldAlert } from "react-icons/lu";
 import { Accordion, Button, Checkbox, Chip, cn, Description, Drawer, Separator } from "@heroui/react";
 
 import { permissions } from "@/permissions";
