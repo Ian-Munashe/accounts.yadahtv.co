@@ -182,7 +182,7 @@ Preserve the existing visual language (accent red, surfaces, rounded auth cards)
 
 ## Permissions catalog
 
-`src/permissions.ts` lists permission categories for admin editing (Account, The View, Yadah Basket, etc.). Values are opaque strings consumed by the backend (e.g. `login`, `users`, `theview:admin`, `yb:payments`). Categories may set `exclusive: true` so the permissions drawer allows at most one selection in that category (radio-style replace). Add new permissions here only when product/backend defines them.
+`src/permissions.ts` lists permission categories for admin editing (User Account, Yadah Basket, etc.). Values are opaque strings consumed by the backend (e.g. `login`, `users`, `yb:payments`). Categories may set `exclusive: true` so the permissions drawer allows at most one selection in that category (radio-style replace). Add new permissions here only when product/backend defines them.
 
 ## Environment variables (names only)
 
