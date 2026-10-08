@@ -15,7 +15,7 @@ export const MobileDrawer: React.FC<Props> = (props) => {
 
   return (
     <Drawer isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
-      <Drawer.Backdrop isDismissable={false} variant="blur" className="z-9999">
+      <Drawer.Backdrop isDismissable={false} variant="blur">
         <Drawer.Content placement="left">
           <Drawer.Dialog>
             <Drawer.CloseTrigger />

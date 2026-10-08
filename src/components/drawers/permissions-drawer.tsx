@@ -41,7 +41,7 @@ export const PermissionsDrawer: React.FC<Props> = (props) => {
 
   return (
     <Drawer isOpen={props.isOpen} onOpenChange={handleOpenChange}>
-      <Drawer.Backdrop className="z-9999">
+      <Drawer.Backdrop>
         <Drawer.Content placement="right">
           <Drawer.Dialog>
             <Drawer.Handle />
