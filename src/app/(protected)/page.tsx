@@ -9,7 +9,7 @@ import { getErrorMessage } from "@/lib/error-message";
 import { useGlobalState, useUserState } from "@/stores";
 import { updateSession } from "@/actions/session-action";
 import { AddContactModal, VerifyOTPModal } from "@/components/modals";
-import { AccountInfoCard, PersonalInfoCard, ProfileCard, ContactInfoCard, NotificationsCard } from "@/components/cards";
+import { AccountInfoCard, PersonalInfoCard, ProfileCard, ContactInfoCard } from "@/components/cards";
 
 enum OTPAction {
   ADD_CONTACT = "add-contact",
@@ -74,7 +74,7 @@ export default function ProfilePage() {
       <div className="space-y-8">
         <BreadCrumb
           title="Profile Overview"
-          description="Review and update your contact details, account info, and notification preferences."
+          description="Review and update your contact details, account info, and profile."
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="flex flex-col gap-6">
@@ -105,7 +105,6 @@ export default function ProfilePage() {
               }}
             />
             <PersonalInfoCard />
-            <NotificationsCard />
           </div>
         </div>
       </div>
