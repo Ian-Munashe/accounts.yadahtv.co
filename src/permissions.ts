@@ -14,15 +14,6 @@ export const permissions: Categories[] = [
     ],
   },
   {
-    category: "The View",
-    exclusive: true,
-    permissions: [
-      { label: "The View Admin", value: "theview:admin" },
-      { label: "Satellite Leader", value: "theview:satellite" },
-      { label: "Cell Group Leader", value: "theview:cell-group" },
-    ],
-  },
-  {
     category: "Yadah Basket",
     permissions: [
       { label: "View Payments", value: "yb:payments" },
