@@ -10,6 +10,15 @@ let isRefreshingToken: Promise<string> | null = null;
 const isSignoutRequest = (config?: InternalAxiosRequestConfig) =>
   typeof config?.url === "string" && config.url.includes("/user/signout");
 
+// Only an outright rejection of the refresh token ends the session. Transient
+// failures (5xx, network, timeout) leave it intact so the user stays signed in
+// for as long as their refresh token remains valid.
+const isDefinitiveRefreshRejection = (error: unknown): boolean => {
+  if (!axiosInstance.isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return status === 400 || status === 403;
+};
+
 export const useAxios = () => {
   const deviceInfo = useDeviceInfoState();
   const { model, platform, deviceId, clientId, operatingSystem } = deviceInfo;
@@ -57,6 +66,8 @@ export const useAxios = () => {
   const refreshSessionToken = useCallback(
     async (originalRequest: InternalAxiosRequestConfig) => {
       if (!isRefreshingToken) {
+        // Held until it settles: every refresh rotates the token and bumps tokenVersion,
+        // so overlapping refreshes make the loser look like it sent a stale token.
         isRefreshingToken = (async () => {
           const session = await getSession();
           if (!session?.refreshToken) throw new Error("No session");
@@ -65,7 +76,9 @@ export const useAxios = () => {
           const { accessToken, refreshToken } = response.data;
           await updateSession({ accessToken, refreshToken });
           return accessToken;
-        })();
+        })().finally(() => {
+          isRefreshingToken = null;
+        });
       }
 
       try {
@@ -73,6 +86,8 @@ export const useAxios = () => {
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return await interceptor(originalRequest);
       } catch (error) {
+        if (!isDefinitiveRefreshRejection(error)) return Promise.reject(error);
+
         await deleteSession();
         const returnTo = window.location.pathname + window.location.search;
         // A failed refresh during a sign-in/join server action is dispatched from
@@ -82,8 +97,6 @@ export const useAxios = () => {
           window.location.href = `/signin?returnTo=${encodeURIComponent(returnTo)}`;
         }
         return Promise.reject(error);
-      } finally {
-        isRefreshingToken = null;
       }
     },
     [interceptor],
