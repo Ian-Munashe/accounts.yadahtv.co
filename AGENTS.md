@@ -131,7 +131,7 @@ Authenticated = presence of access token, refresh token, **and** user. Do not tr
 - Base URL: `process.env.NEXT_PUBLIC_API_URL`.
 - Use **`useAxios()`**:
   - `axios` — unauthenticated / pre-session calls (e.g. signup finish).
-  - `interceptor` — authenticated calls (attaches Bearer token; refreshes on 401; clears session and sends to `/signin` on refresh failure; 403 → `/`).
+  - `interceptor` — authenticated calls (attaches Bearer token; refreshes on 401; clears the session and sends to `/signin` only when the refresh is rejected outright — 400 invalid refresh token or 403 invalid/missing token — while transient failures such as 5xx, network errors, and timeouts keep the session; 403 → `/`).
 - Device headers (when available): `X-Client-Id` (always `"accounts"` from store), `X-Model`, `X-Platform`, `X-Device-Id`, `X-Operating-System`.
 - Lists: prefer **`usePaginatedQuery`** for admin-style paginated endpoints.
 - Errors: `toast.danger(error.response?.data?.message || error.message)` unless a local pattern differs.
